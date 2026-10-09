@@ -1,6 +1,6 @@
-# GPT Matrix FX — 25 experimental 2D effects for WLED
+# GPT Matrix FX — 25 original 2D effects for WLED
 
-**Release:** v0.2.2 (experimental)  
+**Release:** v0.2.2 (public release)  
 **Effects:** 20 standalone matrix effects (`GPT01`–`GPT20`) + 5 AudioReactive effects (`GPTA01`–`GPTA05`)  
 **Target:** WLED with a 2D matrix; designed around 64×64 on an ESP32-S3 / HUB75 setup  
 **Integration:** external PlatformIO usermod library, placed next to the WLED source tree. No changes to WLED's core source files.
@@ -134,7 +134,7 @@ The five audio effects read from the running WLED AudioReactive usermod via `Use
 - Effects have different frame-rate throttles between about 22 ms and 47 ms, but **host timings are not hardware FPS estimates**. Some procedural modes use significant per-pixel trigonometry and should be profiled on the real ESP32-S3.
 - Palette transitions, brightness, 2D segment arrangement and matrix output are handled by WLED. Each GPT effect samples the selected palette through WLED; the WLED Default palette is deliberately requested as a real gradient (`mcol=255`) instead of substituting the segment primary color.
 - If a selected palette is completely black (including a Primary Color palette configured with a black primary), GPT Matrix FX applies a temporary rainbow fallback so the procedural effect remains visible. Black *entries within a non-black palette* remain black. The fallback changes only the rendered result, not the configured WLED palette or primary color. The fallback check adds up to 16 palette lookups per effect invocation; no persistent extra segment buffers are allocated.
-- This package has **not** been compiled or flashed against the user's customized `waveshare_spotify` environment. Host compilation is not a substitute for the full firmware build.
+- The maintainer has reported that the effects run successfully on a real 64×64 matrix. This packaged source was **not** independently built or flashed against the private `waveshare_spotify` checkout in the host-test environment; a local WLED firmware build and on-device acceptance remain necessary for other installations.
 
 ## Test commands
 
@@ -154,6 +154,7 @@ These compile and execute the **real C++ effects source** with a minimal host WL
 - `examples/platformio_override.example.ini`: add-only integration options.
 - `tests/`: runnable host compile, regression and sanitizer tests, excluded from firmware compilation.
 - `TEST_REPORT.md`: verification record and known limitations.
+- `RELEASE_NOTES.md`: release highlights and GitHub release notes.
 - `LICENSE`: MIT.
 
 ## v0.2.2 change summary
@@ -180,3 +181,7 @@ These compile and execute the **real C++ effects source** with a minimal host WL
 - Added three new AudioReactive effects (GPTA03–GPTA05).
 - Switched all user-facing effect names to sortable, zero-padded `GPT## - Name` and `GPTA## - Name` forms.
 - Updated host test coverage to 25 effects, and kept all packaged materials in English.
+
+## Repository hygiene
+
+The project `.gitignore` excludes PlatformIO/IDE outputs and Windows `Zone.Identifier` Mark-of-the-Web sidecar files, including `filename:Zone.Identifier` and `filename:Zone.Identifier:$DATA`. Existing tracked files are not automatically untracked when an ignore rule is added.

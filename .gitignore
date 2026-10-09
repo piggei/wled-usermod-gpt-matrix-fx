@@ -11,3 +11,7 @@ __pycache__/
 Thumbs.db
 build/
 tests/build/
+
+# Windows Mark-of-the-Web (Zone.Identifier) sidecar/ADS files.
+*:Zone.Identifier*
+Zone.Identifier
