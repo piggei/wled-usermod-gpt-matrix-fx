@@ -5,6 +5,8 @@
 **Target:** WLED with a 2D matrix; designed around 64×64 on an ESP32-S3 / HUB75 setup  
 **Integration:** external PlatformIO usermod library, placed next to the WLED source tree. No changes to WLED's core source files.
 
+**Authorship:** All 25 effects, their C++ implementation, tests, and project documentation were created by **ChatGPT (OpenAI)**. The repository maintainer provided the project brief, creative feedback, real-hardware testing, and release publishing. This is an independent community project, not an official OpenAI or WLED product.
+
 The WLED build, display and matrix configuration, preset handling, palettes, and audio processing remain owned by WLED. This project only registers additional WLED effects.
 
 ## Effect catalog
@@ -53,8 +55,8 @@ All effects are procedurally implemented in this package. They are **not copies 
 Place the extracted `wled-usermod-gpt-matrix-fx` directory **beside** your WLED checkout:
 
 ```text
-/home/pj/repo/
-├── wled_17_dev/
+workspace/
+├── WLED/
 │   ├── platformio.ini
 │   └── platformio_override.ini
 └── wled-usermod-gpt-matrix-fx/
@@ -68,7 +70,7 @@ Place the extracted `wled-usermod-gpt-matrix-fx` directory **beside** your WLED 
 
 ### PlatformIO: add one line, not a new configuration
 
-In the existing `custom_usermods` list for the WLED environment you actually use (for example, `[env:waveshare_spotify]`), **append only one** of these entries. Keep any existing usermods and the rest of the PlatformIO settings unchanged.
+In the existing `custom_usermods` list for your active WLED PlatformIO environment (for example, `[env:YOUR_WLED_ENV]`), **append only one** of these entries. Keep any existing usermods and the rest of the PlatformIO settings unchanged.
 
 **Option A — relative path (recommended with sibling directories):**
 
@@ -76,24 +78,28 @@ In the existing `custom_usermods` list for the WLED environment you actually use
   symlink://../wled-usermod-gpt-matrix-fx
 ```
 
-The path is relative to the WLED project root (the directory containing its `platformio.ini`). The `..` selects `/home/pj/repo/`, and then enters the package directory. This survives moving both repositories together.
+The path is relative to the WLED project root (the directory containing its `platformio.ini`). The `..` selects the parent directory, then enters the usermod package directory. This survives moving both repositories together.
 
-**Option B — absolute path (equivalent on this host):**
+**Option B — absolute path (replace with the actual path on your system):**
 
 ```ini
-  symlink:///home/pj/repo/wled-usermod-gpt-matrix-fx
+  symlink:///absolute/path/to/wled-usermod-gpt-matrix-fx
 ```
 
 This points to an exact filesystem location. It needs editing when moving to a different machine or changing directory names. Do not add both entries.
 
-If `custom_usermods` already uses `${...}` inheritance, preserve it; do not replace the setting. In particular, do **not** remove AudioReactive, Spotify, buzzer, matrix, or any other usermods already listed. See `examples/platformio_override.example.ini` for the same add-only instructions.
+If `custom_usermods` already uses `${...}` inheritance, preserve it; do not replace the setting. In particular, do **not** remove AudioReactive or any other usermods already listed. See `examples/platformio_override.example.ini` for the same add-only instructions.
 
 ### Build
 
+From the WLED project root, substitute the name of the PlatformIO environment you intend to compile:
+
 ```sh
-cd /home/pj/repo/wled_17_dev
-pio run -e waveshare_spotify
+cd /path/to/WLED
+pio run -e YOUR_WLED_ENV
 ```
+
+If you are already in the WLED project root, only the `pio run` line is necessary. `YOUR_WLED_ENV` is a placeholder, not a literal environment name.
 
 After flashing, use the WLED effect selector. Names sort lexicographically as `GPT01` ... `GPT20`, followed by `GPTA01` ... `GPTA05`. Effect IDs are dynamically allocated by WLED (`strip.addEffect(255, ...)`) and may change between firmware builds. Verify `/json/eff` and update any saved mode IDs or external automations after installation or removal of effects.
 
@@ -134,7 +140,7 @@ The five audio effects read from the running WLED AudioReactive usermod via `Use
 - Effects have different frame-rate throttles between about 22 ms and 47 ms, but **host timings are not hardware FPS estimates**. Some procedural modes use significant per-pixel trigonometry and should be profiled on the real ESP32-S3.
 - Palette transitions, brightness, 2D segment arrangement and matrix output are handled by WLED. Each GPT effect samples the selected palette through WLED; the WLED Default palette is deliberately requested as a real gradient (`mcol=255`) instead of substituting the segment primary color.
 - If a selected palette is completely black (including a Primary Color palette configured with a black primary), GPT Matrix FX applies a temporary rainbow fallback so the procedural effect remains visible. Black *entries within a non-black palette* remain black. The fallback changes only the rendered result, not the configured WLED palette or primary color. The fallback check adds up to 16 palette lookups per effect invocation; no persistent extra segment buffers are allocated.
-- The maintainer has reported that the effects run successfully on a real 64×64 matrix. This packaged source was **not** independently built or flashed against the private `waveshare_spotify` checkout in the host-test environment; a local WLED firmware build and on-device acceptance remain necessary for other installations.
+- The maintainer has reported that the effects run successfully on a real 64×64 matrix. This packaged source was **not** independently built or flashed against the maintainer's custom WLED checkout in the host-test environment; a local WLED firmware build and on-device acceptance remain necessary for other installations.
 
 ## Test commands
 

@@ -2,6 +2,8 @@
 
 First public source release of **GPT Matrix FX**, an external PlatformIO usermod providing **25 original effects for WLED 2D LED matrices**.
 
+All effects, source code, automated tests, and documentation were designed and produced by **ChatGPT (OpenAI)**. The repository maintainer supplied the brief, feedback, hardware evaluation, and release publishing. This is an independent project, not an official OpenAI or WLED release.
+
 ## Highlights
 
 - **20 standalone effects**, named `GPT01` through `GPT20`.
@@ -19,7 +21,7 @@ Unpack `wled-usermod-gpt-matrix-fx` alongside your WLED checkout. Append the fol
   symlink://../wled-usermod-gpt-matrix-fx
 ```
 
-Alternatively, use an absolute `symlink:///...` path. See `README.md` for details. Include and enable the existing WLED AudioReactive usermod for the five sound-responsive effects.
+Alternatively, use an absolute `symlink:///absolute/path/to/wled-usermod-gpt-matrix-fx` path, replacing the placeholder with your actual filesystem location. Compile from the WLED project root with `pio run -e YOUR_WLED_ENV`, replacing `YOUR_WLED_ENV` with the selected PlatformIO environment name. See `README.md` for details. Include and enable the existing WLED AudioReactive usermod for the five sound-responsive effects.
 
 ## Validation
 
@@ -27,7 +29,7 @@ Alternatively, use an absolute `symlink:///...` path. See `README.md` for detail
 - Differential FFT tests for all five audio modes.
 - GPT06 meshing/orbital-motion geometry tests.
 - C++11 compatibility checks and AddressSanitizer/UndefinedBehaviorSanitizer passed.
-- The maintainer reports satisfactory results on the real LED matrix. This package has not been independently compiled against the maintainer's private WLED `waveshare_spotify` checkout; hardware FPS/soak tests have not been formally measured.
+- The maintainer reports satisfactory results on the real LED matrix. This package has not been independently compiled against the maintainer's custom WLED checkout; hardware FPS/soak tests have not been formally measured.
 
 ## Notes
 
