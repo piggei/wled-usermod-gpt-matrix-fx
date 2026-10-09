@@ -1,0 +1,13 @@
+.pio/
+.pioenvs/
+.piolibdeps/
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+build/
+tests/build/

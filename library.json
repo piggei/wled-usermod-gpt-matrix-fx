@@ -1,0 +1,17 @@
+{
+  "name": "wled-usermod-gpt-matrix-fx",
+  "version": "0.2.2",
+  "description": "25 procedural matrix effects for WLED, including five AudioReactive modes",
+  "keywords": "wled,usermod,effects,2d,matrix,audioreactive",
+  "license": "MIT",
+  "build": {
+    "libArchive": false,
+    "srcDir": ".",
+    "srcFilter": [
+      "+<gpt_matrix_fx.cpp>",
+      "-<tests/>",
+      "-<examples/>"
+    ]
+  },
+  "dependencies": {}
+}
