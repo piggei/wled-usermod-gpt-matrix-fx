@@ -41,7 +41,7 @@ int main(){
     char want[36];
     if(n<NORMAL) std::snprintf(want,sizeof(want),"GPT%02zu - ",n+1);
     else if(n<NORMAL+AUDIO) std::snprintf(want,sizeof(want),"GPTA%02zu - ",n-NORMAL+1);
-    else std::snprintf(want,sizeof(want),"GPT%02zu - ",n-AUDIO+1);
+    else std::snprintf(want,sizeof(want),"GPT%02zub - ",n-AUDIO+1);
     assert(std::strstr(fx.name,want)==fx.name);
     assert(fx.id==255);
     if(n>=NORMAL && n<NORMAL+AUDIO) assert(std::strstr(fx.name,";2v;")!=nullptr);
@@ -70,6 +70,27 @@ int main(){
       std::printf("%3dx%-3d %-7s pixels=%-5d colors=%-5u scratch=%-6zu first=%5lld us changed=%zu\n",
                   w,h,n<NORMAL?"NORMAL":(n<NORMAL+AUDIO?"AUDIO":"SPARSE"),w*h,colors,seg.scratch.size(),(long long)dur,animated);
     }
+  }
+  // Expansion regression: increasing Intensity must expand the actual dot
+  // footprint at an identical wave phase; brightness remains independent.
+  {
+    auto lit=[](const Segment& seg) {
+      size_t count=0;
+      for(size_t i=0;i<seg.frameBuffer.size();i+=4)
+        if(seg.frameBuffer[i] || seg.frameBuffer[i+1] || seg.frameBuffer[i+2]) ++count;
+      return count;
+    };
+    Segment seg(64,64); strip._currentSegment=&seg;
+    seg.palette=6; seg.speed=135; seg.intensity=0;
+    strip.now=700000; seg.call=0; strip.effects[NORMAL+AUDIO+1].fn();
+    const size_t small=lit(seg);
+    seg.intensity=255; seg.call=0; strip.effects[NORMAL+AUDIO+1].fn();
+    const size_t large=lit(seg);
+    if (large<=small) {
+      std::fprintf(stderr,"Expansion slider did not enlarge dot footprint: %zu vs %zu\n",small,large);
+      return 12;
+    }
+    std::printf("SPARSE_EXPANSION_TEST_PASS low=%zu high=%zu\n",small,large);
   }
   // Palette-change regression: render, switch several palettes and render
   // again WITHOUT resetting the effect or segment runtime. Primary color is

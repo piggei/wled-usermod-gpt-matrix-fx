@@ -647,7 +647,7 @@ static void mode_gpt20() {
     SEGMENT.setPixelColorXY(x,y,chroma(sum*42.0f+product*145.0f+t*10.0f+SEGMENT.custom2*.55f,lum));
   }
 }
-// Experimental GPT21/GPT22: sparse, distance-phased ripple on an adaptive dot lattice.
+// Experimental GPT21b/GPT22b: sparse, distance-phased ripple on an adaptive dot lattice.
 // No full-frame allocation; black space between cells is intentional.
 // Shared temporal and radial wave, with two different light representations.
 static void mode_sparse_ripple(bool variableSize) {
@@ -662,7 +662,9 @@ static void mode_sparse_ripple(bool variableSize) {
   const float centerX=((float)w-1.0f)*.5f;
   const float centerY=((float)h-1.0f)*.5f;
   const float baseRadius=variableSize ? .40f : .57f;
-  const float maxRadius=variableSize ? fminf(2.10f,pitch*.35f) : baseRadius;
+  const float radiusCap=variableSize ? fminf(2.10f,pitch*.35f) : baseRadius;
+  // Expansion controls the geometric radius, not brightness.
+  const float maxRadius=variableSize ? baseRadius+(radiusCap-baseRadius)*contrast : baseRadius;
   const float outerRadius=maxRadius+.75f;
   const float ringWave=K_TAU/3.0f;
   const float tint=SEGMENT.custom2*.50f;
@@ -678,7 +680,7 @@ static void mode_sparse_ripple(bool variableSize) {
     const float wave=.5f+.5f*cosf(dist*ringWave-phase);
     const float envelope=wave*wave*(3.0f-2.0f*wave);
     const float radius=variableSize ? baseRadius+(maxRadius-baseRadius)*envelope : baseRadius;
-    const float peak=variableSize ? (.42f+.48f*contrast) : (.10f+(.85f*contrast)*envelope);
+    const float peak=variableSize ? .90f : (.10f+(.85f*contrast)*envelope);
     const float hue=dist*10.0f+phase*7.0f+tint;
     const int x0=(int)floorf(cx-radius-1.0f), x1=(int)ceilf(cx+radius+1.0f);
     const int y0=(int)floorf(cy-radius-1.0f), y1=(int)ceilf(cy+radius+1.0f);
@@ -694,8 +696,8 @@ static void mode_sparse_ripple(bool variableSize) {
 }
 static void mode_gpt21() { mode_sparse_ripple(false); }
 static void mode_gpt22() { mode_sparse_ripple(true); }
-static const char m21[] PROGMEM="GPT21 - Sparse Ripple Brightness@Wave Speed,Contrast,Reserved,Color;!,!;!;2;sx=135,ix=205";
-static const char m22[] PROGMEM="GPT22 - Sparse Ripple Size@Wave Speed,Expansion,Reserved,Color;!,!;!;2;sx=135,ix=205";
+static const char m21[] PROGMEM="GPT21b - Sparse Ripple Brightness@Wave Speed,Contrast,Reserved,Color;!,!;!;2;sx=135,ix=205";
+static const char m22[] PROGMEM="GPT22b - Sparse Ripple Size@Wave Speed,Expansion,Reserved,Color;!,!;!;2;sx=135,ix=205";
 
 static const char m20[] PROGMEM="GPT20 - Zenith Quasicrystal@Drift,Brilliance,Axes,Color;!,!;!;2;sx=115,ix=170";
 

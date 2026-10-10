@@ -1,12 +1,12 @@
-# Sparse Ripple Experimental Test Report
+# GPT Matrix FX v0.3.0-dev.2 - Test report
 
-- Derived from the v0.2.2 release source; the 25 original effect implementations remain unchanged.
-- 27 modes registered in total: 20 original normal + 5 audio + 2 sparse ripple experiments.
-- Host C++ compilation and rendering tests: PASS.
-- Resolution coverage: 8x8, 16x32, 64x64, 96x48, 128x128.
-- Palette-switch regression, audio tests and gear tests: PASS.
-- ASan/UBSan host suite: PASS.
-- Full firmware build on actual WLED / ESP32-S3: NOT RUN.
-- Real hardware visual validation: PENDING.
+Experimental branch build only. Public v0.2.2 remains unchanged.
 
-The two new modes are appended after the existing 25 to minimize effects-ID disruption within the same firmware configuration. Effect IDs may still change across different WLED builds.
+- GPT21b: fixed-size dots; Intensity controls brightness contrast.
+- GPT22b: Intensity controls actual maximum dot radius, capped by lattice pitch.
+- Both variants retain shared lattice geometry, phase and palette behavior.
+- Host regression: 27 effects across five resolutions, palette changes, audio fallback and motion checks.
+- Dedicated slider regression checks that increasing Expansion increases lit-pixel footprint at fixed phase.
+- Host AddressSanitizer and UndefinedBehaviorSanitizer: see local test execution.
+- ESP32/WLED full compilation: not performed here.
+- Hardware: maintainer reported initial visual smoke test of the prior experimental build on 64x64 HUB75, preferring GPT22. Exact firmware configuration/date not recorded. The new Expansion fix still requires hardware testing.

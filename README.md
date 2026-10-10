@@ -2,8 +2,8 @@
 
 Experimental continuation of the stable **v0.2.2** release. This package includes all 25 original effects plus two new visual comparison candidates. **Do not publish this package as v0.2.2.**
 
-- GPT21 - Sparse Ripple Brightness
-- GPT22 - Sparse Ripple Size
+- GPT21b - Sparse Ripple Brightness
+- GPT22b - Sparse Ripple Size
 
 See [EXPERIMENTAL_SPARSE_RIPPLE.md](EXPERIMENTAL_SPARSE_RIPPLE.md) for testing and attribution.
 
