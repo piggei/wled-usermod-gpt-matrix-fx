@@ -34,7 +34,19 @@ static size_t difference(const std::vector<uint8_t>& a, const std::vector<uint8_
 int main(){
   if(!globalMod){std::fprintf(stderr,"Usermod not registered\n");return 1;}
   globalMod->setup();
-  constexpr size_t NORMAL=20,AUDIO=5,EXPERIMENTAL=2,COUNT=NORMAL+AUDIO+EXPERIMENTAL;
+  {
+    std::map<std::string,std::string> fields;
+    JsonObject info{&fields, ""};
+    globalMod->addToJsonInfo(info);
+    assert(fields.at("u.gptMatrixFX.version")=="0.3.0");
+    assert(fields.at("u.gptMatrixFX.build")=="dev.6");
+    assert(fields.at("u.gptMatrixFX.effects")=="30");
+    assert(fields.at("u.gptMatrixFX.standard")=="20");
+    assert(fields.at("u.gptMatrixFX.audio")=="5");
+    assert(fields.at("u.gptMatrixFX.experimental")=="5");
+    std::puts("JSON_INFO_TEST_PASS");
+  }
+  constexpr size_t NORMAL=20,AUDIO=5,EXPERIMENTAL=5,COUNT=NORMAL+AUDIO+EXPERIMENTAL;
   assert(strip.effects.size()==COUNT);
   for(size_t n=0;n<COUNT;n++) {
     const auto& fx=strip.effects[n];
@@ -92,6 +104,24 @@ int main(){
     }
     std::printf("SPARSE_EXPANSION_TEST_PASS low=%zu high=%zu\n",small,large);
   }
+  // Dot Spacing must change lattice geometry in BOTH sparse variants.
+  // Rosette Size must change its geometry while preserving default scale.
+  for (int index : {25, 26, 28}) {
+    Segment seg(64,64); strip._currentSegment=&seg;
+    seg.palette=6; seg.speed=135; seg.intensity=205;
+    seg.custom1=128; seg.custom2=128;
+    strip.now=700000; seg.call=0;
+    if(index==28) seg.custom2=0; else seg.custom1=0;
+    strip.effects[index].fn(); auto first=seg.frameBuffer;
+    seg.call=0;
+    if(index==28) seg.custom2=255; else seg.custom1=255;
+    strip.effects[index].fn();
+    if(difference(first,seg.frameBuffer)==0) {
+      std::fprintf(stderr,"Custom slider geometry regression: effect index %d\n",index);
+      return 13;
+    }
+  }
+  std::puts("CUSTOM_GEOMETRY_TEST_PASS");
   // Palette-change regression: render, switch several palettes and render
   // again WITHOUT resetting the effect or segment runtime. Primary color is
   // deliberately black, to expose mcol=0's incorrect Default behavior.
@@ -126,7 +156,7 @@ int main(){
     seg.palette=0; gptfx::ready();
     assert(gptfx::chroma(40.0f, 1.0f)!=0U);
   }
-  std::puts("PALETTE_CHANGE_TEST_PASS 27 FX x 9 palette states + default-black regression + dark-entry preservation");
+  std::puts("PALETTE_CHANGE_TEST_PASS 30 FX x 9 palette states + default-black regression + dark-entry preservation");
   // Audio absent: 5 effects stay safe and safely subdued, no fake FFT signal.
   UsermodManager::audioOn=false;
   for(int idx=NORMAL;idx<(int)(NORMAL+AUDIO);++idx){
@@ -207,5 +237,5 @@ int main(){
     assert(difference(a.frameBuffer,b.frameBuffer)>2500);
   }
   std::puts("GPT06_ORBIT_MESH_TEST_PASS 5 speeds x 11 times; contact phase, viewport, travel and rendering");
-  std::puts("HOST_TEST_PASS 27 FX x 5 resolutions + 25 FX x 9 palette states + 5 FFT proofs + no-audio + NaN + epicyclic mesh + nonmatrix");
+  std::puts("HOST_TEST_PASS 30 FX x 5 resolutions + 30 FX x 9 palette states + 5 FFT proofs + no-audio + NaN + epicyclic mesh + nonmatrix");
 }

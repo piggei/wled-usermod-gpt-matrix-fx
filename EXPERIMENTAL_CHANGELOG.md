@@ -10,3 +10,21 @@
 - All existing 25 effect algorithms remain unchanged.
 
 Credit: Milo (1human/JM) suggested the original CC0 Dot ripple reference and identified the Expansion control mismatch in the experimental code.
+
+## v0.3.0-dev.3
+
+- Added GPT23b Photon Loom, GPT24b Kinetic Rosettes and GPT25b Tidal Glyphs.
+- Retained GPT21b and GPT22b and all 25 original effects.
+- New effects are experimental only; hardware testing pending.
+
+## v0.3.0-dev.4
+
+- Enlarged GPT24b Kinetic Rosettes by 22%, targeting approximately 90-95% matrix occupancy without changing its rotation, petal count or palette behavior.
+- Recorded the maintainer's successful GPT22b Expansion hardware smoke test on 2026-10-10, while explicitly marking unreported firmware revision details as unknown.
+- No other effect algorithm changed. Public v0.2.2 remains untouched.
+
+## v0.3.0-dev.5
+- Added runtime JSON info metadata for installed build identification.
+- Replaced both Sparse Ripple `Reserved` controls with shared `Dot Spacing`.
+- Replaced GPT24b `Hue` with a geometric `Size` slider.
+- All stable and audio effects unchanged.

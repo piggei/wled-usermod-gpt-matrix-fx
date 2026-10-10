@@ -1,6 +1,6 @@
 /*
- * GPT Matrix FX - 25 experimental WLED 2D effects (c) 2026.
- * Version: 0.2.2 (20 procedural + 5 audio reactive).
+ * GPT Matrix FX - 30 WLED 2D effects (c) 2026.
+ * Version: 0.3.0-dev.6 (20 procedural + 5 audio + 5 experimental).
  * License: MIT. Designed for WLED 0.15+ / modern WLED usermod FX API.
  * No WLED core edits, no display buffers outside WLED's segment storage.
  * The number on the effect name is a stable human label, not a WLED mode ID.
@@ -10,6 +10,8 @@
 #include <string.h>
 
 namespace gptfx {
+constexpr const char* GPTFX_VERSION = "0.3.0";
+constexpr const char* GPTFX_BUILD = "dev.6";
 constexpr float K_PI = 3.14159265358979323846f;
 constexpr float K_TAU = 6.28318530717958647692f;
 
@@ -655,7 +657,9 @@ static void mode_sparse_ripple(bool variableSize) {
   const int w=SEG_W, h=SEG_H;
   const float shortSide=(float)(w<h?w:h);
   // At 64x64 the pitch is six pixels, leaving substantial negative space.
-  const float pitch=fmaxf(3.0f, shortSide/10.7f);
+  // Custom1: Dot Spacing. 128 preserves the original 6-pixel baseline on 64x64.
+  // Shared by both variants for a controlled geometry comparison.
+  const float pitch=fmaxf(3.0f, (shortSide/10.7f) * (0.65f + 0.70f*tune1()));
   const float t=timePhase(1.15f);
   const float contrast=detail();
   const float phase=t*3.0f;
@@ -696,8 +700,93 @@ static void mode_sparse_ripple(bool variableSize) {
 }
 static void mode_gpt21() { mode_sparse_ripple(false); }
 static void mode_gpt22() { mode_sparse_ripple(true); }
-static const char m21[] PROGMEM="GPT21b - Sparse Ripple Brightness@Wave Speed,Contrast,Reserved,Color;!,!;!;2;sx=135,ix=205";
-static const char m22[] PROGMEM="GPT22b - Sparse Ripple Size@Wave Speed,Expansion,Reserved,Color;!,!;!;2;sx=135,ix=205";
+static const char m21[] PROGMEM="GPT21b - Sparse Ripple Brightness@Wave Speed,Contrast,Dot Spacing,Color;!,!;!;2;sx=135,ix=205,c1=128";
+static const char m22[] PROGMEM="GPT22b - Sparse Ripple Size@Wave Speed,Expansion,Dot Spacing,Color;!,!;!;2;sx=135,ix=205,c1=128";
+
+
+// GPT23b: crossed light fibers with traveling, independently phase-shifted pulses.
+// Sparse luminous threads alternate over/under at every crossing.
+static void mode_gpt23() {
+  if (!ready() || !tick(32)) return;
+  const int w=SEG_W,h=SEG_H;
+  const float t=timePhase(.75f), density=5.0f+5.0f*tune1();
+  const float u=unitOf(w,h), energy=.25f+.75f*detail();
+  for(int y=0;y<h;++y) for(int x=0;x<w;++x) {
+    Point p=normal(x,y,u,w*.5f,h*.5f);
+    const float vx=p.x*density,vy=p.y*density;
+    const float ix=floorf(vx+.5f),iy=floorf(vy+.5f);
+    const float dx=fabsf(vx-ix),dy=fabsf(vy-iy);
+    const float warp=.11f*sinf(vy*1.2f+t*.8f+ix*.73f);
+    const float hThread=1.0f-smooth(.055f,.19f,fabsf(vy-iy+warp));
+    const float vThread=1.0f-smooth(.055f,.19f,fabsf(vx-ix+.11f*sinf(vx*.9f-t*.7f+iy*.67f)));
+    const float hPulse=ridge(vx*1.85f-t*2.8f+iy*2.1f);
+    const float vPulse=ridge(vy*1.85f+t*2.5f+ix*1.7f);
+    const bool over=(int(fabsf(ix)+fabsf(iy))&1)!=0;
+    const float crossing=(1.0f-smooth(.08f,.29f,dx))*(1.0f-smooth(.08f,.29f,dy));
+    const float lum=clip((hThread*(.09f+.7f*hPulse)+vThread*(.09f+.7f*vPulse))*.65f*energy + crossing*(over?hPulse:vPulse)*.30f);
+    SEGMENT.setPixelColorXY(x,y,chroma(18.0f*ix+29.0f*iy+t*12.0f+SEGMENT.custom2*.35f,lum));
+  }
+}
+static const char m23[] PROGMEM="GPT23b - Photon Loom@Pulse Speed,Glow,Thread Density,Hue;!,!;!;2;sx=145,ix=190";
+
+// GPT24b: layered hypotrochoid-like luminous traces, moving in opposite directions.
+// Uses distance to parametric orbit samples, not a precomputed image or frame buffer.
+static void mode_gpt24() {
+  if (!ready() || !tick(40)) return;
+  const int w=SEG_W,h=SEG_H;
+  // Custom2 is now Size. Midpoint (128) matches the dev.4 1.22x scale.
+  // Range: 0.70x to 1.735x; motion, petals and glow remain unchanged.
+  const float scale=0.70f + 1.04f*tune2();
+  const float u=unitOf(w,h)/scale,t=timePhase(.6f),d=detail();
+  const float petals=4.0f+floorf(tune1()*6.0f);
+  for(int y=0;y<h;++y) for(int x=0;x<w;++x) {
+    Point p=normal(x,y,u,w*.5f,h*.5f);
+    float best=10.0f,bright=0.0f;
+    // Two contra-rotating rosettes with analytically modulated radius.
+    for(int layer=0;layer<2;++layer) {
+      const float a=atan2f(p.y,p.x),r=sqrtf(p.x*p.x+p.y*p.y);
+      const float phase=a*(petals+(float)layer)+t*(layer?-.72f:.91f);
+      const float target=.48f+.16f*cosf(phase)+.075f*sinf(phase*1.7f+t*.4f);
+      const float dist=fabsf(r-target);
+      if(dist<best) best=dist;
+      const float thread=1.0f-smooth(.012f,.045f+.018f*d,dist);
+      const float spark=ridge(a*22.0f+(layer?1.0f:-1.0f)*t*3.0f);
+      bright+=thread*(.20f+.48f*spark);
+    }
+    const float core=(1.0f-smooth(.025f,.12f,sqrtf(p.x*p.x+p.y*p.y)))*.26f;
+    const float halo=(1.0f-smooth(.04f,.17f,best))*.11f;
+    SEGMENT.setPixelColorXY(x,y,chroma(atan2f(p.y,p.x)*35.0f+t*18.0f,clip((bright+core+halo)*(.45f+.55f*d))));
+  }
+}
+static const char m24[] PROGMEM="GPT24b - Kinetic Rosettes@Orbit Speed,Trace Glow,Petals,Size;!,!;!;2;sx=135,ix=190,c2=128";
+
+// GPT25b: an array of individual glyphs bending in a traveling tidal field.
+// Alternating open arcs and square corners preserve negative space between cells.
+static void mode_gpt25() {
+  if (!ready() || !tick(35)) return;
+  const int w=SEG_W,h=SEG_H;
+  const float u=unitOf(w,h),t=timePhase(.55f),cells=4.0f+floorf(tune1()*5.0f);
+  const float d=detail();
+  for(int y=0;y<h;++y) for(int x=0;x<w;++x) {
+    Point p=normal(x,y,u,w*.5f,h*.5f);
+    const float gx=p.x*cells,gy=p.y*cells;
+    const float ix=floorf(gx+.5f),iy=floorf(gy+.5f);
+    const float px=gx-ix,py=gy-iy;
+    const float tidal=sinf(ix*.64f+iy*.83f-t*1.8f);
+    const float theta=.52f*tidal;
+    const float xx=px*cosf(theta)-py*sinf(theta);
+    const float yy=px*sinf(theta)+py*cosf(theta);
+    const float r=sqrtf(xx*xx+yy*yy),angle=atan2f(yy,xx);
+    const float arc=1.0f-smooth(.035f,.10f,fabsf(r-(.24f+.045f*tidal)));
+    const float opening=smooth(-.25f,.20f,sinf(angle*2.0f+t*.7f+ix+iy));
+    const float corners=1.0f-smooth(.035f,.09f,fabsf(fmaxf(fabsf(xx),fabsf(yy))-.28f));
+    const float shape=(int(fabsf(ix)+fabsf(iy))&1)?arc*opening:corners*(1.0f-opening*.7f);
+    const float pulse=.30f+.70f*(.5f+.5f*tidal);
+    const float lum=clip(shape*pulse*(.3f+.7f*d));
+    SEGMENT.setPixelColorXY(x,y,chroma(ix*24.0f+iy*13.0f+t*9.0f+SEGMENT.custom2*.4f,lum));
+  }
+}
+static const char m25[] PROGMEM="GPT25b - Tidal Glyphs@Tide Speed,Brightness,Grid Density,Hue;!,!;!;2;sx=125,ix=195";
 
 static const char m20[] PROGMEM="GPT20 - Zenith Quasicrystal@Drift,Brilliance,Axes,Color;!,!;!;2;sx=115,ix=170";
 
@@ -906,8 +995,21 @@ public:
     // Experimental effects are appended: existing dynamic IDs keep their order.
     strip.addEffect(255, &gptfx::mode_gpt21, gptfx::m21);
     strip.addEffect(255, &gptfx::mode_gpt22, gptfx::m22);
+    strip.addEffect(255, &gptfx::mode_gpt23, gptfx::m23);
+    strip.addEffect(255, &gptfx::mode_gpt24, gptfx::m24);
+    strip.addEffect(255, &gptfx::mode_gpt25, gptfx::m25);
   }
   void loop() override {}
+  void addToJsonInfo(JsonObject& root) override {
+    JsonObject userInfo = root["u"].to<JsonObject>();
+    JsonObject info = userInfo["gptMatrixFX"].to<JsonObject>();
+    info["version"] = gptfx::GPTFX_VERSION;
+    info["build"] = gptfx::GPTFX_BUILD;
+    info["effects"] = 30;
+    info["standard"] = 20;
+    info["audio"] = 5;
+    info["experimental"] = 5;
+  }
   uint16_t getId() override { return USERMOD_ID_UNSPECIFIED; }
 };
 static GPTMatrixFXUsermod gptMatrixFX;

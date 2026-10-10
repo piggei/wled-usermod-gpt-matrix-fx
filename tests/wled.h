@@ -9,8 +9,10 @@
 #include <cassert>
 #include <cmath>
 #include <algorithm>
+#include <map>
 // Reproduce the Arduino core macro to detect naming collisions in host tests.
 #define sq(x) ((x) * (x))
+#define VERSION 2607201
 #define PROGMEM
 constexpr uint16_t USERMOD_ID_AUDIOREACTIVE = 25;
 constexpr uint16_t USERMOD_ID_UNSPECIFIED = 0;
@@ -82,10 +84,23 @@ extern MockStrip strip;
 #define SEG_H SEGMENT.height
 #define SEGCOLOR(x) (uint32_t)0
 inline uint16_t hw_random16(uint16_t range){ static uint32_t seed=114641; seed=seed*1664525U+1013904223U;return (uint16_t)((seed>>8)%range);}
+struct JsonObject {
+  struct Value {
+    std::map<std::string, std::string>* fields;
+    std::string key;
+    template<typename T> void operator=(T v) { (*fields)[key] = std::to_string(v); }
+    void operator=(const char* v) { (*fields)[key] = v; }
+    template<typename T> JsonObject to() { return JsonObject{fields, key + "."}; }
+  };
+  std::map<std::string,std::string>* fields;
+  std::string prefix;
+  Value operator[](const char* key) { return Value{fields, prefix+key}; }
+};
 struct Usermod {
   virtual ~Usermod() =default;
   virtual void setup() {}
   virtual void loop() {}
+  virtual void addToJsonInfo(JsonObject&) {}
   virtual uint16_t getId(){return USERMOD_ID_UNSPECIFIED;}
 };
 extern Usermod* globalMod;
