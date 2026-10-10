@@ -1,5 +1,7 @@
 # GPT Matrix FX — 25 original 2D effects for WLED
 
+[![GPT Matrix FX - 20 Original WLED Matrix Effects](https://img.youtube.com/vi/CnXsLasY7FU/maxresdefault.jpg)](https://www.youtube.com/watch?v=CnXsLasY7FU)
+
 **Release:** v0.2.2 (public release)  
 **Effects:** 20 standalone matrix effects (`GPT01`–`GPT20`) + 5 AudioReactive effects (`GPTA01`–`GPTA05`)  
 **Target:** WLED with a 2D matrix; designed around 64×64 on an ESP32-S3 / HUB75 setup  
