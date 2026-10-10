@@ -34,16 +34,17 @@ static size_t difference(const std::vector<uint8_t>& a, const std::vector<uint8_
 int main(){
   if(!globalMod){std::fprintf(stderr,"Usermod not registered\n");return 1;}
   globalMod->setup();
-  constexpr size_t NORMAL=20,AUDIO=5,COUNT=NORMAL+AUDIO;
+  constexpr size_t NORMAL=20,AUDIO=5,EXPERIMENTAL=2,COUNT=NORMAL+AUDIO+EXPERIMENTAL;
   assert(strip.effects.size()==COUNT);
   for(size_t n=0;n<COUNT;n++) {
     const auto& fx=strip.effects[n];
     char want[36];
     if(n<NORMAL) std::snprintf(want,sizeof(want),"GPT%02zu - ",n+1);
-    else std::snprintf(want,sizeof(want),"GPTA%02zu - ",n-NORMAL+1);
+    else if(n<NORMAL+AUDIO) std::snprintf(want,sizeof(want),"GPTA%02zu - ",n-NORMAL+1);
+    else std::snprintf(want,sizeof(want),"GPT%02zu - ",n-AUDIO+1);
     assert(std::strstr(fx.name,want)==fx.name);
     assert(fx.id==255);
-    if(n>=NORMAL) assert(std::strstr(fx.name,";2v;")!=nullptr);
+    if(n>=NORMAL && n<NORMAL+AUDIO) assert(std::strstr(fx.name,";2v;")!=nullptr);
     else assert(std::strstr(fx.name,";2;")!=nullptr);
   }
   initAudio();
@@ -53,7 +54,7 @@ int main(){
     for(size_t n=0;n<COUNT;n++) {
       Segment seg(w,h);strip._currentSegment=&seg;
       seg.call=0;strip.now=700000;
-      UsermodManager::audioOn=(n>=NORMAL);
+      UsermodManager::audioOn=(n>=NORMAL && n<NORMAL+AUDIO);
       const auto start=std::chrono::steady_clock::now();
       strip.effects[n].fn();
       const auto finish=std::chrono::steady_clock::now();
@@ -67,7 +68,7 @@ int main(){
       // At 8x8 some details alias; only require temporal change at >= 64 width.
       if(w>=64 && animated==0){std::fprintf(stderr,"Frozen FX %zu at %dx%d\n",n+1,w,h);return 4;}
       std::printf("%3dx%-3d %-7s pixels=%-5d colors=%-5u scratch=%-6zu first=%5lld us changed=%zu\n",
-                  w,h,n<NORMAL?"NORMAL":"AUDIO",w*h,colors,seg.scratch.size(),(long long)dur,animated);
+                  w,h,n<NORMAL?"NORMAL":(n<NORMAL+AUDIO?"AUDIO":"SPARSE"),w*h,colors,seg.scratch.size(),(long long)dur,animated);
     }
   }
   // Palette-change regression: render, switch several palettes and render
@@ -104,23 +105,23 @@ int main(){
     seg.palette=0; gptfx::ready();
     assert(gptfx::chroma(40.0f, 1.0f)!=0U);
   }
-  std::puts("PALETTE_CHANGE_TEST_PASS 25 FX x 9 palette states + default-black regression + dark-entry preservation");
+  std::puts("PALETTE_CHANGE_TEST_PASS 27 FX x 9 palette states + default-black regression + dark-entry preservation");
   // Audio absent: 5 effects stay safe and safely subdued, no fake FFT signal.
   UsermodManager::audioOn=false;
-  for(int idx=NORMAL;idx<(int)COUNT;++idx){
+  for(int idx=NORMAL;idx<(int)(NORMAL+AUDIO);++idx){
     Segment seg(64,64);strip._currentSegment=&seg;seg.call=0;
     strip.now=970000;strip.effects[idx].fn();assert(colorCount(seg)>1);
   }
   // Audio metadata inaccessible: must not dereference u_data or stale pointers.
   UsermodManager::audioOn=true;
   UsermodManager::audio.u_size=0;
-  for(int idx=NORMAL;idx<(int)COUNT;++idx){
+  for(int idx=NORMAL;idx<(int)(NORMAL+AUDIO);++idx){
     Segment seg(64,64);strip._currentSegment=&seg;seg.call=0;strip.now=980000;
     strip.effects[idx].fn();
   }
   initAudio();
   // Direct proof each audio effect responds to changes in FFT at fixed time.
-  for(int idx=NORMAL;idx<(int)COUNT;++idx){
+  for(int idx=NORMAL;idx<(int)(NORMAL+AUDIO);++idx){
     std::memset(fft,0,sizeof(fft));vol=0.0f;peak=0;
     Segment a(64,64);strip._currentSegment=&a;strip.now=990000;a.call=0;
     strip.effects[idx].fn();auto quiet=a.frameBuffer;
@@ -133,7 +134,7 @@ int main(){
   }
   // Audio not finite: sanitize from external source before math conversion.
   vol=std::numeric_limits<float>::quiet_NaN();
-  for(int idx=NORMAL;idx<(int)COUNT;++idx){
+  for(int idx=NORMAL;idx<(int)(NORMAL+AUDIO);++idx){
     Segment seg(32,32);strip._currentSegment=&seg;seg.call=0;strip.now=993000;
     strip.effects[idx].fn();
   }
@@ -185,5 +186,5 @@ int main(){
     assert(difference(a.frameBuffer,b.frameBuffer)>2500);
   }
   std::puts("GPT06_ORBIT_MESH_TEST_PASS 5 speeds x 11 times; contact phase, viewport, travel and rendering");
-  std::puts("HOST_TEST_PASS 25 FX x 5 resolutions + 25 FX x 9 palette states + 5 FFT proofs + no-audio + NaN + epicyclic mesh + nonmatrix");
+  std::puts("HOST_TEST_PASS 27 FX x 5 resolutions + 25 FX x 9 palette states + 5 FFT proofs + no-audio + NaN + epicyclic mesh + nonmatrix");
 }

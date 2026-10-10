@@ -647,6 +647,56 @@ static void mode_gpt20() {
     SEGMENT.setPixelColorXY(x,y,chroma(sum*42.0f+product*145.0f+t*10.0f+SEGMENT.custom2*.55f,lum));
   }
 }
+// Experimental GPT21/GPT22: sparse, distance-phased ripple on an adaptive dot lattice.
+// No full-frame allocation; black space between cells is intentional.
+// Shared temporal and radial wave, with two different light representations.
+static void mode_sparse_ripple(bool variableSize) {
+  if (!ready() || !tick(30)) return;
+  const int w=SEG_W, h=SEG_H;
+  const float shortSide=(float)(w<h?w:h);
+  // At 64x64 the pitch is six pixels, leaving substantial negative space.
+  const float pitch=fmaxf(3.0f, shortSide/10.7f);
+  const float t=timePhase(1.15f);
+  const float contrast=detail();
+  const float phase=t*3.0f;
+  const float centerX=((float)w-1.0f)*.5f;
+  const float centerY=((float)h-1.0f)*.5f;
+  const float baseRadius=variableSize ? .40f : .57f;
+  const float maxRadius=variableSize ? fminf(2.10f,pitch*.35f) : baseRadius;
+  const float outerRadius=maxRadius+.75f;
+  const float ringWave=K_TAU/3.0f;
+  const float tint=SEGMENT.custom2*.50f;
+  // Clear every frame: a small dot must not leave a trail when it shrinks.
+  SEGMENT.fill(0);
+  const int cols=(int)ceilf((float)w/pitch)+2;
+  const int rows=(int)ceilf((float)h/pitch)+2;
+  for(int j=0;j<rows;++j) for(int i=0;i<cols;++i) {
+    const float cx=centerX+((float)i-(float)(cols-1)*.5f)*pitch;
+    const float cy=centerY+((float)j-(float)(rows-1)*.5f)*pitch;
+    if(cx < -outerRadius || cy < -outerRadius || cx > w-1+outerRadius || cy > h-1+outerRadius) continue;
+    const float dist=sqrtf(squaref(cx-centerX)+squaref(cy-centerY))/pitch;
+    const float wave=.5f+.5f*cosf(dist*ringWave-phase);
+    const float envelope=wave*wave*(3.0f-2.0f*wave);
+    const float radius=variableSize ? baseRadius+(maxRadius-baseRadius)*envelope : baseRadius;
+    const float peak=variableSize ? (.42f+.48f*contrast) : (.10f+(.85f*contrast)*envelope);
+    const float hue=dist*10.0f+phase*7.0f+tint;
+    const int x0=(int)floorf(cx-radius-1.0f), x1=(int)ceilf(cx+radius+1.0f);
+    const int y0=(int)floorf(cy-radius-1.0f), y1=(int)ceilf(cy+radius+1.0f);
+    for(int y=y0;y<=y1;++y) for(int x=x0;x<=x1;++x) {
+      if(x<0 || y<0 || x>=w || y>=h) continue;
+      // Pixel-center coverage approximates subpixel dots without aliasing.
+      const float dx=(float)x-cx, dy=(float)y-cy;
+      const float d=sqrtf(dx*dx+dy*dy);
+      const float coverage=clip(radius+.55f-d);
+      if(coverage>0.0f) SEGMENT.setPixelColorXY(x,y,chroma(hue,peak*coverage));
+    }
+  }
+}
+static void mode_gpt21() { mode_sparse_ripple(false); }
+static void mode_gpt22() { mode_sparse_ripple(true); }
+static const char m21[] PROGMEM="GPT21 - Sparse Ripple Brightness@Wave Speed,Contrast,Reserved,Color;!,!;!;2;sx=135,ix=205";
+static const char m22[] PROGMEM="GPT22 - Sparse Ripple Size@Wave Speed,Expansion,Reserved,Color;!,!;!;2;sx=135,ix=205";
+
 static const char m20[] PROGMEM="GPT20 - Zenith Quasicrystal@Drift,Brilliance,Axes,Color;!,!;!;2;sx=115,ix=170";
 
 // Audio data is read from the *real* AudioReactive usermod, never from a copied symbol.
@@ -851,6 +901,9 @@ public:
     strip.addEffect(255, &gptfx::mode_audio3, gptfx::ma3);
     strip.addEffect(255, &gptfx::mode_audio4, gptfx::ma4);
     strip.addEffect(255, &gptfx::mode_audio5, gptfx::ma5);
+    // Experimental effects are appended: existing dynamic IDs keep their order.
+    strip.addEffect(255, &gptfx::mode_gpt21, gptfx::m21);
+    strip.addEffect(255, &gptfx::mode_gpt22, gptfx::m22);
   }
   void loop() override {}
   uint16_t getId() override { return USERMOD_ID_UNSPECIFIED; }
