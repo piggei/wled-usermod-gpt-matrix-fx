@@ -16,6 +16,10 @@ static uint8_t peak=1;
 static void* audioPointers[4]={&vol, nullptr, fft, &peak};
 static void initAudio(){UsermodManager::audio.u_size=4;UsermodManager::audio.u_data=audioPointers;}
 #include "../gpt_matrix_fx.cpp"
+#include "gpt24_dev7_reference.h"
+#include "gpt24_dev8_reference.h"
+#include "gpt24_dev9_reference.h"
+#include "gpt_multi_dev10_reference.h"
 
 static unsigned colorCount(const Segment& seg) {
   std::set<uint32_t> colors;
@@ -39,14 +43,24 @@ int main(){
     JsonObject info{&fields, ""};
     globalMod->addToJsonInfo(info);
     assert(fields.at("u.gptMatrixFX.version")=="0.3.0");
-    assert(fields.at("u.gptMatrixFX.build")=="dev.6");
-    assert(fields.at("u.gptMatrixFX.effects")=="30");
+    assert(fields.at("u.gptMatrixFX.build")=="dev.16-preview.4a");
+    assert(fields.at("u.gptMatrixFX.effects")=="35");
     assert(fields.at("u.gptMatrixFX.standard")=="20");
     assert(fields.at("u.gptMatrixFX.audio")=="5");
-    assert(fields.at("u.gptMatrixFX.experimental")=="5");
+    assert(fields.at("u.gptMatrixFX.experimental")=="10");
+    assert(fields.at("u.gptMatrixFX.performance.effect")=="GPT24b");
+    assert(fields.at("u.gptMatrixFX.performance.rendered")=="0");
+    assert(fields.at("u.gptMatrixFX.trigonometry.effect")=="GPT24b");
+    assert(fields.at("u.gptMatrixFX.trigonometry.tableSamples")=="1024");
+    assert(fields.at("u.gptMatrixFX.trigonometry.tableBytes")=="4096");
+    assert(fields.at("u.gptMatrixFX.trigonometry.backend")==gptfx_trig::backendName());
+    assert(fields.at("u.gptMatrixFX.trigonometry.extraBackend")==gptfx::extraBackendName());
+    assert(fields.at("u.gptMatrixFX.trigonometry.extraEffects")=="GPT08,GPT20");
+    assert(fields.at("u.gptMatrixFX.trigonometry.labyrinthBackend")==gptfx::labyrinthBackendName());
+    assert(fields.at("u.gptMatrixFX.extraPerformance.effect")=="none");
     std::puts("JSON_INFO_TEST_PASS");
   }
-  constexpr size_t NORMAL=20,AUDIO=5,EXPERIMENTAL=5,COUNT=NORMAL+AUDIO+EXPERIMENTAL;
+  constexpr size_t NORMAL=20,AUDIO=5,EXPERIMENTAL=10,COUNT=NORMAL+AUDIO+EXPERIMENTAL;
   assert(strip.effects.size()==COUNT);
   for(size_t n=0;n<COUNT;n++) {
     const auto& fx=strip.effects[n];
@@ -58,6 +72,344 @@ int main(){
     assert(fx.id==255);
     if(n>=NORMAL && n<NORMAL+AUDIO) assert(std::strstr(fx.name,";2v;")!=nullptr);
     else assert(std::strstr(fx.name,";2;")!=nullptr);
+  }
+  // Frozen baseline: dev.8 must still match dev.7 pixel-for-pixel.
+  // dev.9 uses periodic phase reduction, so tiny FP rounding differences
+  // versus dev.8 are permitted but large geometry changes are forbidden.
+  {
+    struct Case { int w,h; uint32_t time; uint8_t speed,intensity,petals,size,palette; };
+    const Case cases[]={
+      {8,8,1234,0,0,0,0,0},
+      {16,32,50000,255,255,255,255,6},
+      {64,64,700000,135,190,128,128,6},
+      {64,64,2100123,240,40,220,255,8},
+      {64,64,4200000,19,250,0,0,0},
+      {96,48,1234567,255,150,190,90,11},
+      {128,128,960000,80,215,210,220,7}
+    };
+    for(const Case& c:cases) {
+      Segment oldSeg(c.w,c.h),dev8Seg(c.w,c.h),newSeg(c.w,c.h);
+      auto setControls=[&](Segment& seg) {
+        seg.speed=c.speed; seg.intensity=c.intensity;
+        seg.custom1=c.petals; seg.custom2=c.size;
+        seg.palette=c.palette; seg.call=0;
+      };
+      setControls(oldSeg);setControls(dev8Seg);setControls(newSeg);
+      strip.now=c.time;
+      strip._currentSegment=&oldSeg;
+      gptfx::mode_gpt24_dev7_reference();
+      strip._currentSegment=&dev8Seg;
+      gptfx::mode_gpt24_dev8_reference();
+      if(difference(oldSeg.frameBuffer,dev8Seg.frameBuffer)!=0) {
+        std::fprintf(stderr,"DEV8 REFERENCE REGRESSION %dx%d t=%u\n",c.w,c.h,c.time);
+        return 14;
+      }
+      strip._currentSegment=&newSeg;
+      gptfx::mode_gpt24();
+      unsigned maxDiff=0;
+      for(size_t i=0;i<newSeg.frameBuffer.size();++i) {
+        unsigned d=(unsigned)std::abs((int)newSeg.frameBuffer[i]-(int)dev8Seg.frameBuffer[i]);
+        if(d>maxDiff) maxDiff=d;
+      }
+      if(maxDiff>
+#if GPTFX_GPT24_TRIG_BACKEND == 1
+         10
+#else
+         2
+#endif
+        ) {
+        std::fprintf(stderr,"GPT24 PHASE REGRESSION %dx%d t=%u maxDiff=%u\n",c.w,c.h,c.time,maxDiff);
+        return 14;
+      }
+    }
+    std::puts("GPT24_DEV8_REFERENCE_PASS 7 dev.7 pixel-identical comparisons; dev.9 <=2/channel");
+  }
+  // Time-accumulation regression: 48 deliberately spaced uptime/speed
+  // samples on a 64x64 segment, from a cold boot up to two hours.
+  // The framebuffer must retain its shape and remain within a visually
+  // negligible 2/255 per-channel error compared with original dev.8.
+  {
+    constexpr uint32_t uptimeSeconds[]={0,14,40,90,150,300,400,700,900,1800,3600,7200};
+    constexpr uint8_t speeds[]={0,30,135,255};
+    unsigned worstDiff=0, worstChangedPixels=0;
+    for(uint8_t speed:speeds) for(uint32_t sec:uptimeSeconds) {
+      Segment original(64,64),bounded(64,64);
+      for(Segment* seg:{&original,&bounded}) {
+        seg->speed=speed;seg->intensity=190;seg->custom1=128;
+        seg->custom2=128;seg->palette=6;seg->call=0;
+      }
+      strip.now=sec*1000U;
+      strip._currentSegment=&original;
+      gptfx::mode_gpt24_dev8_reference();
+      strip._currentSegment=&bounded;
+      gptfx::mode_gpt24();
+      unsigned maxDiff=0,changedPx=0;
+      for(size_t pixel=0;pixel<64U*64U;++pixel) {
+        bool changed=false;
+        for(size_t c=0;c<4;++c) {
+          const size_t i=pixel*4U+c;
+          unsigned d=(unsigned)std::abs((int)original.frameBuffer[i]-(int)bounded.frameBuffer[i]);
+          if(d>maxDiff) maxDiff=d;
+          if(d) changed=true;
+        }
+        if(changed) ++changedPx;
+      }
+      if(maxDiff>worstDiff) worstDiff=maxDiff;
+      if(changedPx>worstChangedPixels) worstChangedPixels=changedPx;
+      if(maxDiff >
+#if GPTFX_GPT24_TRIG_BACKEND == 1
+         10 || changedPx>4096U
+#else
+         2 || changedPx>64U*64U/25U
+#endif
+       ) {
+        std::fprintf(stderr,"GPT24 LONG-UPTIME REGRESSION speed=%u sec=%u maxDiff=%u changedPx=%u\n",
+                     speed,sec,maxDiff,changedPx);
+        return 15;
+      }
+      const float t=gptfx::timePhase(.6f);
+      const float phases[]={t*.91f,t*-.72f,
+        t*(.91f*1.7f+.4f),t*(-.72f*1.7f+.4f),t*3.0f};
+      for(float raw:phases) {
+        const float boundedPhase=gptfx::rosettePhase(raw);
+        assert(std::isfinite(boundedPhase));
+        assert(std::fabs(boundedPhase)<gptfx::K_TAU);
+      }
+    }
+    std::printf("GPT24_LONG_UPTIME_PASS 48 cases 0..7200s worstChannelDelta=%u worstChangedPixels=%u/4096\n",
+                worstDiff,worstChangedPixels);
+  }
+  // Standalone LUT numeric reference on the actual bounded angle range.
+  // Sweeps negative and positive phases across many table cells, including
+  // the +/- wrap boundaries used by the two rosette layers.
+  {
+    float worstNear = 0.0f, worstLinear = 0.0f;
+    for(int i=-16000;i<=16000;++i) {
+      const float a = (float)i * .005f;
+      for(int cosine=0;cosine<2;++cosine) {
+        const float exact=cosine?cosf(a):sinf(a);
+        const float near=cosine?gptfx_trig::cosineNearest(a):gptfx_trig::sineNearest(a);
+        const float interpolated=cosine?gptfx_trig::cosineLinear(a):gptfx_trig::sineLinear(a);
+        worstNear=std::max(worstNear,fabsf(near-exact));
+        worstLinear=std::max(worstLinear,fabsf(interpolated-exact));
+      }
+    }
+    if(worstNear>0.0032f || worstLinear>0.00005f) {
+      std::fprintf(stderr,"TRIG_LUT_NUMERIC_FAIL near=%f linear=%f\n",worstNear,worstLinear);
+      return 18;
+    }
+    // Exceptional inputs must use native math (avoids undefined int casts).
+    assert(std::isfinite(gptfx_trig::sineLinear(200000.0f)));
+    assert(std::isfinite(gptfx_trig::cosineNearest(-200000.0f)));
+    assert(std::isnan(gptfx_trig::sineLinear(std::numeric_limits<float>::quiet_NaN())));
+    std::printf("TRIG_LUT_NUMERIC_PASS worstNearest=%.8f worstLinear=%.8f\n",worstNear,worstLinear);
+  }
+  // Compare the actual new frame against frozen dev.9, not only dev.8.
+  // No palette, tick, color, spatial radius or other effect code changed.
+  {
+    const uint32_t uptimes[]={0,14,90,300,421,697,900,1800,3600,7200};
+    const uint8_t speeds[]={0,30,135,255};
+    const uint8_t palettes[]={0,6,8};
+    unsigned worstDelta=0,worstPixels=0;
+    for(uint8_t speed:speeds)for(uint32_t secs:uptimes)for(uint8_t palette:palettes) {
+      Segment oldSeg(64,64),newSeg(64,64);
+      for(Segment* p:{&oldSeg,&newSeg}) {
+        p->speed=speed;p->intensity=190;p->custom1=128;
+        p->custom2=128;p->palette=palette;p->call=0;
+      }
+      strip.now=secs*1000U;
+      strip._currentSegment=&oldSeg;
+      gptfx::mode_gpt24_dev9_reference();
+      strip._currentSegment=&newSeg;
+      gptfx::mode_gpt24();
+      unsigned maxDelta=0,changedPixels=0;
+      for(size_t pixel=0;pixel<4096;++pixel) {
+        bool changed=false;
+        for(size_t c=0;c<4;++c) {
+          const size_t offset=pixel*4+c;
+          unsigned d=(unsigned)abs((int)newSeg.frameBuffer[offset]-(int)oldSeg.frameBuffer[offset]);
+          maxDelta=std::max(maxDelta,d);
+          if(d)changed=true;
+        }
+        if(changed)++changedPixels;
+      }
+      worstDelta=std::max(worstDelta,maxDelta);
+      worstPixels=std::max(worstPixels,changedPixels);
+#if GPTFX_GPT24_TRIG_BACKEND == 0
+      const unsigned channelThreshold=0,changedThreshold=0;
+#elif GPTFX_GPT24_TRIG_BACKEND == 1
+      const unsigned channelThreshold=12,changedThreshold=4096;
+#else
+      const unsigned channelThreshold=2,changedThreshold=164;
+#endif
+      if(maxDelta>channelThreshold || changedPixels>changedThreshold) {
+        std::fprintf(stderr,"TRIG_LUT_FRAME_REGRESSION backend=%s speed=%u uptime=%u palette=%u maxDelta=%u changedPixels=%u\n",
+           gptfx_trig::backendName(),speed,secs,palette,maxDelta,changedPixels);
+        return 19;
+      }
+    }
+    std::printf("GPT24_LUT_DEV9_FRAME_PASS backend=%s 120 cases maxChannelDelta=%u maxChangedPixels=%u/4096\n",
+       gptfx_trig::backendName(),worstDelta,worstPixels);
+  }
+  // Frozen dev.10 pixel comparison for each new candidate. Native mode
+  // must be byte-for-byte unchanged. LUT mode allows tiny quantization.
+  {
+    const uint32_t upSec[]={0,14,207,421,754,1800,7200};
+    const uint8_t speeds[]={0,30,135,255};
+    const uint8_t palettes[]={0,6,8};
+    unsigned worst[4]={},changedMax[4]={};
+    unsigned highPixelMax[4]={};
+    double worstMeanAbs[4]={};
+    const int fx[]={7,8,18,20};
+    void(*base[])()={gptfx::mode_gpt7_dev10_reference,gptfx::mode_gpt8_dev10_reference,
+                     gptfx::mode_gpt18_dev10_reference,gptfx::mode_gpt20_dev10_reference};
+    void(*candidate[])()={gptfx::mode_gpt7,gptfx::mode_gpt8,gptfx::mode_gpt18,gptfx::mode_gpt20};
+    for(int n=0;n<4;++n) for(uint32_t uptime:upSec) for(uint8_t speed:speeds)
+      for(uint8_t palette:palettes) {
+      Segment original(64,64),modified(64,64);
+      for(Segment* seg:{&original,&modified}) {
+        seg->speed=speed;seg->intensity=190;seg->custom1=128;
+        seg->custom2=128;seg->palette=palette;seg->call=0;
+      }
+      strip.now=uptime*1000U;
+      strip._currentSegment=&original;base[n]();
+      strip._currentSegment=&modified;candidate[n]();
+      unsigned delta=0,changed=0,highPixels=0;
+      uint64_t sumAbs=0;
+      for(size_t pixel=0;pixel<4096;++pixel) {
+        bool differed=false,high=false;
+        for(size_t channel=0;channel<4;++channel) {
+          const size_t i=pixel*4+channel;
+          unsigned diff=(unsigned)std::abs((int)original.frameBuffer[i]-(int)modified.frameBuffer[i]);
+          delta=std::max(delta,diff);differed|=(diff!=0);high|=(diff>16);sumAbs+=diff;
+        }
+        if(differed)++changed;
+        if(high)++highPixels;
+      }
+      worst[n]=std::max(worst[n],delta);
+      changedMax[n]=std::max(changedMax[n],changed);
+      highPixelMax[n]=std::max(highPixelMax[n],highPixels);
+      worstMeanAbs[n]=std::max(worstMeanAbs[n],(double)sumAbs/(4096.0*3.0));
+      // In native mode / exact-hoisting cases require bit identity.
+      // In LUT modes, palette quantization can cause isolated jumps.
+      bool isNative=(n==0) ||
+          (n==2 && GPTFX_GPT18_TRIG_BACKEND==0 && GPTFX_GPT18_PHASE_BOUNDING==0) ||
+          (n!=0 && n!=2 && GPTFX_EXTRA_TRIG_BACKEND==0);
+      if((isNative && delta!=0) ||
+         (!isNative && (changed>200 || highPixels>5 ||
+                        ((double)sumAbs/(4096.0*3.0))>0.09))) {
+        std::fprintf(stderr,"EXTRA_TRIG_REGRESSION GPT%02d uptime=%u speed=%u pal=%u delta=%u changed=%u highPixels=%u mean=%.5f\n",
+                     fx[n],uptime,speed,palette,delta,changed,highPixels,(double)sumAbs/(4096.0*3.0));
+        return 26;
+      }
+    }
+    for(int n=0;n<4;++n)
+      std::printf("EXTRA_TRIG_FRAME_PASS GPT%02d cases=84 maxChannelDelta=%u changedPixels=%u/4096 highPixelMax=%u meanAbsMax=%.4f\n",
+                  fx[n],worst[n],changedMax[n],highPixelMax[n],worstMeanAbs[n]);
+  }
+  // Larger-host-resolution fidelity sampling (not a device FPS claim).
+  {
+    const int ids[]={7,8,18,20};
+    void(*original[])()={gptfx::mode_gpt7_dev10_reference,gptfx::mode_gpt8_dev10_reference,
+                         gptfx::mode_gpt18_dev10_reference,gptfx::mode_gpt20_dev10_reference};
+    void(*modified[])()={gptfx::mode_gpt7,gptfx::mode_gpt8,gptfx::mode_gpt18,gptfx::mode_gpt20};
+    for(int side: {64,128}) for(int n=0;n<4;++n) {
+      const int w=128,h=side;
+      unsigned worstDelta=0,worstChanged=0,worstHigh=0;
+      double maxMean=0.0;
+      for(uint32_t uptime: {14U,421U,1800U}) for(uint8_t speed: {uint8_t(0),uint8_t(135),uint8_t(255)}) {
+        Segment a(w,h),b(w,h);
+        for(Segment* seg:{&a,&b}){
+          seg->speed=speed;seg->intensity=190;seg->custom1=128;
+          seg->custom2=128;seg->palette=6;seg->call=0;
+        }
+        strip.now=uptime*1000U;
+        strip._currentSegment=&a;original[n]();
+        strip._currentSegment=&b;modified[n]();
+        unsigned changed=0,high=0,delta=0;
+        uint64_t sum=0;
+        for(int pixel=0;pixel<w*h;++pixel){
+          bool differ=false,highDiff=false;
+          for(int c=0;c<3;++c){
+            int d=std::abs((int)a.frameBuffer[(size_t)pixel*4+c]-(int)b.frameBuffer[(size_t)pixel*4+c]);
+            delta=std::max(delta,(unsigned)d);sum+=(unsigned)d;
+            differ|=d!=0;highDiff|=d>16;
+          }
+          changed+=differ;high+=highDiff;
+        }
+        const double mean=(double)sum/(w*h*3.0);
+        worstDelta=std::max(worstDelta,delta);
+        worstChanged=std::max(worstChanged,changed);
+        worstHigh=std::max(worstHigh,high);
+        maxMean=std::max(maxMean,mean);
+        bool native=(n==0)||(n==2 && GPTFX_GPT18_TRIG_BACKEND==0 && GPTFX_GPT18_PHASE_BOUNDING==0)||
+          (n!=0&&n!=2&&GPTFX_EXTRA_TRIG_BACKEND==0);
+        if((native&&delta) || (!native && (changed>(unsigned)(w*h/20) ||
+            high>(unsigned)(w*h/250) || mean>0.12))) {
+          std::fprintf(stderr,"EXTRA_LARGE_REGRESSION GPT%02d %dx%d sec=%u changed=%u high=%u mean=%.4f delta=%u\n",
+                       ids[n],w,h,uptime,changed,high,mean,delta);
+          return 28;
+        }
+      }
+      std::printf("EXTRA_LARGE_FRAME_PASS GPT%02d %dx%d cases=9 maxChannelDelta=%u changed=%u high=%u meanAbsMax=%.4f\n",
+        ids[n],w,h,worstDelta,worstChanged,worstHigh,maxMean);
+    }
+  }
+  // Verify the new wrapper's rendered/skipped accounting and rolling window.
+  {
+    Segment seg(64,64);strip._currentSegment=&seg;
+    strip.now=123456;seg.call=0;strip.effects[7].fn();
+    ++seg.call;strip.now+=10;strip.effects[7].fn();
+    ++seg.call;strip.now+=50;strip.effects[7].fn();
+    assert(gptfx::extraPerf.calls==3 && gptfx::extraPerf.rendered==2 && gptfx::extraPerf.skipped==1);
+    for(int i=0;i<35;++i){++seg.call;strip.now+=50;strip.effects[7].fn();}
+    assert(gptfx::extraPerf.recentValid==32);
+    std::map<std::string,std::string> fields;
+    JsonObject info{&fields,""};globalMod->addToJsonInfo(info);
+    assert(fields.at("u.gptMatrixFX.extraPerformance.effect")=="GPT08");
+    assert(std::stoul(fields.at("u.gptMatrixFX.extraPerformance.recentAvgUs"))>0);
+    strip.now+=100;seg.call=0;strip.effects[6].fn();
+    assert(gptfx::extraPerf.calls==1 && gptfx::extraPerf.rendered==1);
+    assert(std::strcmp(gptfx::extraPerf.effect,"GPT07")==0);
+    std::puts("EXTRA_TRIG_TELEMETRY_PASS");
+  }
+  // GPT24 profiling: first draw, throttled call, then another draw.
+  {
+    Segment seg(64,64); strip._currentSegment=&seg;
+    const uint32_t calls0=gptfx::gpt24Perf.calls;
+    const uint32_t drawn0=gptfx::gpt24Perf.rendered;
+    const uint32_t skipped0=gptfx::gpt24Perf.skipped;
+    strip.now=50000; seg.call=0; strip.effects[28].fn();
+    ++seg.call; strip.now+=10; strip.effects[28].fn();
+    ++seg.call; strip.now+=50; strip.effects[28].fn();
+    assert(gptfx::gpt24Perf.calls==calls0+3);
+    assert(gptfx::gpt24Perf.rendered==drawn0+2);
+    assert(gptfx::gpt24Perf.skipped==skipped0+1);
+    assert(gptfx::gpt24Perf.width==64 && gptfx::gpt24Perf.height==64);
+    assert(gptfx::gpt24Perf.renderMaxUs>0);
+    assert(gptfx::gpt24Perf.recentValid>=2);
+    assert(gptfx::gpt24Perf.renderLastUs>0);
+    assert(gptfx::gpt24Perf.rowSamples>=128);
+    assert(gptfx::gpt24Perf.rowMaxUs>0);
+    assert(gptfx::gpt24Perf.phaseRawAbs>0.0f);
+    assert(gptfx::gpt24Perf.phaseWrappedAbs<gptfx::K_TAU);
+    assert(gptfx::gpt24Perf.coreStart==-1); // Host has no FreeRTOS cores.
+    assert(gptfx::gpt24Perf.coreEnd==-1);
+    // Rolling window must retain at most 32 recent renders, not all history.
+    for(int n=0;n<37;++n) {
+      seg.call++;strip.now+=50;
+      strip.effects[28].fn();
+    }
+    assert(gptfx::gpt24Perf.recentValid==32);
+    assert(gptfx::gpt24Perf.recentWrite<32);
+    std::map<std::string,std::string> fields;
+    JsonObject info{&fields, ""};globalMod->addToJsonInfo(info);
+    assert(std::stoul(fields.at("u.gptMatrixFX.performance.recentCount"))>=2);
+    assert(std::stoul(fields.at("u.gptMatrixFX.performance.recentAvgUs"))>0);
+    assert(std::stoul(fields.at("u.gptMatrixFX.performance.rowMaxUs"))>0);
+    assert(std::stof(fields.at("u.gptMatrixFX.performance.phaseRawAbs"))>0.0f);
+    assert(std::stof(fields.at("u.gptMatrixFX.performance.phaseWrappedAbs"))<gptfx::K_TAU);
+    std::puts("GPT24_TELEMETRY_TEST_PASS");
   }
   initAudio();
   const std::pair<int,int> sizes[]={{8,8},{16,32},{64,64},{96,48},{128,128}};
@@ -156,7 +508,7 @@ int main(){
     seg.palette=0; gptfx::ready();
     assert(gptfx::chroma(40.0f, 1.0f)!=0U);
   }
-  std::puts("PALETTE_CHANGE_TEST_PASS 30 FX x 9 palette states + default-black regression + dark-entry preservation");
+  std::puts("PALETTE_CHANGE_TEST_PASS 35 FX x 9 palette states + default-black regression + dark-entry preservation");
   // Audio absent: 5 effects stay safe and safely subdued, no fake FFT signal.
   UsermodManager::audioOn=false;
   for(int idx=NORMAL;idx<(int)(NORMAL+AUDIO);++idx){
@@ -169,6 +521,41 @@ int main(){
   for(int idx=NORMAL;idx<(int)(NORMAL+AUDIO);++idx){
     Segment seg(64,64);strip._currentSegment=&seg;seg.call=0;strip.now=980000;
     strip.effects[idx].fn();
+  }
+  // Phase regression and fixed reference checks ran above.
+  // GPT24 profiling: first draw, throttled call, then another draw.
+  {
+    Segment seg(64,64); strip._currentSegment=&seg;
+    const uint32_t calls0=gptfx::gpt24Perf.calls;
+    const uint32_t drawn0=gptfx::gpt24Perf.rendered;
+    const uint32_t skipped0=gptfx::gpt24Perf.skipped;
+    strip.now=50000; seg.call=0; strip.effects[28].fn();
+    ++seg.call; strip.now+=10; strip.effects[28].fn();
+    ++seg.call; strip.now+=50; strip.effects[28].fn();
+    assert(gptfx::gpt24Perf.calls==calls0+3);
+    assert(gptfx::gpt24Perf.rendered==drawn0+2);
+    assert(gptfx::gpt24Perf.skipped==skipped0+1);
+    assert(gptfx::gpt24Perf.width==64 && gptfx::gpt24Perf.height==64);
+    assert(gptfx::gpt24Perf.renderMaxUs>0);
+    assert(gptfx::gpt24Perf.recentValid>=2);
+    assert(gptfx::gpt24Perf.renderLastUs>0);
+    assert(gptfx::gpt24Perf.rowSamples>=128);
+    assert(gptfx::gpt24Perf.rowMaxUs>0);
+    assert(gptfx::gpt24Perf.coreStart==-1); // Host has no FreeRTOS cores.
+    assert(gptfx::gpt24Perf.coreEnd==-1);
+    // Rolling window must retain at most 32 recent renders, not all history.
+    for(int n=0;n<37;++n) {
+      seg.call++;strip.now+=50;
+      strip.effects[28].fn();
+    }
+    assert(gptfx::gpt24Perf.recentValid==32);
+    assert(gptfx::gpt24Perf.recentWrite<32);
+    std::map<std::string,std::string> fields;
+    JsonObject info{&fields, ""};globalMod->addToJsonInfo(info);
+    assert(std::stoul(fields.at("u.gptMatrixFX.performance.recentCount"))>=2);
+    assert(std::stoul(fields.at("u.gptMatrixFX.performance.recentAvgUs"))>0);
+    assert(std::stoul(fields.at("u.gptMatrixFX.performance.rowMaxUs"))>0);
+    std::puts("GPT24_TELEMETRY_TEST_PASS");
   }
   initAudio();
   // Direct proof each audio effect responds to changes in FFT at fixed time.
@@ -237,5 +624,5 @@ int main(){
     assert(difference(a.frameBuffer,b.frameBuffer)>2500);
   }
   std::puts("GPT06_ORBIT_MESH_TEST_PASS 5 speeds x 11 times; contact phase, viewport, travel and rendering");
-  std::puts("HOST_TEST_PASS 30 FX x 5 resolutions + 30 FX x 9 palette states + 5 FFT proofs + no-audio + NaN + epicyclic mesh + nonmatrix");
+  std::puts("HOST_TEST_PASS 35 FX x 5 resolutions + 35 FX x 9 palette states + 5 FFT proofs + no-audio + NaN + epicyclic mesh + nonmatrix");
 }

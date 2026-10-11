@@ -14,6 +14,7 @@
 #define sq(x) ((x) * (x))
 #define VERSION 2607201
 #define PROGMEM
+inline uint32_t micros() { static uint32_t clockUs=0; clockUs+=1000U; return clockUs; }
 constexpr uint16_t USERMOD_ID_AUDIOREACTIVE = 25;
 constexpr uint16_t USERMOD_ID_UNSPECIFIED = 0;
 struct um_data_t { unsigned u_size=0; void** u_data=nullptr; };

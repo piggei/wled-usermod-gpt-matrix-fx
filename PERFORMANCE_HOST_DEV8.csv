@@ -1,0 +1,33 @@
+effect,name,host_median_us,host_p90_us
+1,GPT01 - Caustic Atlas,150.55,215.72
+2,GPT02 - Voronoi Bloom,139.60,169.58
+3,GPT03 - Origami Reactor,204.10,253.41
+4,GPT04 - Ink Tectonics,59.19,101.91
+5,GPT05 - Event Horizon,232.69,312.39
+6,GPT06 - Clockwork Cathedral,186.80,251.77
+7,GPT07 - Impossible Lattice,428.00,500.25
+8,GPT08 - Aether Topography,275.47,309.71
+9,GPT09 - Mandelglass,228.93,245.97
+10,GPT10 - Glass Circuit,179.46,228.10
+11,GPT11 - Aurora Loom,171.14,222.84
+12,GPT12 - Lagrange Ballet,156.20,183.14
+13,GPT13 - Chromatic Kintsugi,275.45,294.60
+14,GPT14 - Phantom Elevator,75.31,90.10
+15,GPT15 - Ferrofluid Theatre,216.34,231.22
+16,GPT16 - Riemann Current,266.46,298.39
+17,GPT17 - Constellation Engine,676.66,850.75
+18,GPT18 - Vitreous Labyrinth,424.15,485.95
+19,GPT19 - Celestial Runewheel,458.29,518.36
+20,GPT20 - Zenith Quasicrystal,482.21,542.36
+21,GPTA01 - Bass Cartographer,241.84,265.27
+22,GPTA02 - Harmonic Wormholes,336.72,367.13
+23,GPTA03 - Spectral Loom,149.99,176.81
+24,GPTA04 - Resonant Tessellator,187.01,201.97
+25,GPTA05 - Synaptic Reef,313.49,358.11
+26,GPT21b - Sparse Ripple Brightness,19.01,19.15
+27,GPT22b - Sparse Ripple Size,26.63,27.89
+28,GPT23b - Photon Loom,230.38,253.50
+29,GPT24b - Kinetic Rosettes,380.99,478.56
+30,GPT25b - Tidal Glyphs,333.07,384.83
+AB,GPT24b dev.7 reference,538.42,595.40
+AB,GPT24b dev.8 optimized,374.69,442.66

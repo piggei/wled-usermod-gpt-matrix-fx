@@ -1,0 +1,12 @@
+backend,uptime_s,dev9_us,selected_us,speedup_ratio
+libm,14,312.21,314.06,0.9941
+libm,421,311.86,311.04,1.0026
+libm,900,312.44,312.70,0.9992
+backend,uptime_s,dev9_us,selected_us,speedup_ratio
+lut1024-nearest,14,300.18,188.35,1.5938
+lut1024-nearest,421,300.31,188.92,1.5896
+lut1024-nearest,900,297.23,188.51,1.5767
+backend,uptime_s,dev9_us,selected_us,speedup_ratio
+lut1024-linear,14,309.65,200.50,1.5444
+lut1024-linear,421,304.58,200.32,1.5204
+lut1024-linear,900,302.34,200.35,1.5090
