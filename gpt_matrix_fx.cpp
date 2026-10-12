@@ -1,6 +1,6 @@
 /*
  * GPT Matrix FX - 40 WLED 2D effects (c) 2026.
- * Version: 0.3.0-rc.3 (30 standard + 10 audio; 0 experimental audio).
+ * Version: 0.3.0-rc.2 (30 standard + 10 audio; 0 experimental audio).
  * License: MIT. Designed for WLED 0.15+ / modern WLED usermod FX API.
  * No WLED core edits, no display buffers outside WLED's segment storage.
  * The number on the effect name is a stable human label, not a WLED mode ID.
@@ -13,7 +13,7 @@
 
 namespace gptfx {
 constexpr const char* GPTFX_VERSION = "0.3.0";
-constexpr const char* GPTFX_BUILD = "rc.3";
+constexpr const char* GPTFX_BUILD = "rc.2";
 constexpr float K_PI = 3.14159265358979323846f;
 constexpr float K_TAU = 6.28318530717958647692f;
 
