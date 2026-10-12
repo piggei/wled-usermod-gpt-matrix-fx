@@ -4,7 +4,7 @@
 
 **40 original, procedural 2D effects for [WLED](https://github.com/wled/WLED): 30 visual effects and 10 AudioReactive effects.** Designed primarily for a **64×64 LED matrix** and tested during development on an ESP32-S3 / Waveshare HUB75 matrix.
 
-**Current candidate: v0.3.0-rc.4.** Includes 40 effects (30 standard and 10 AudioReactive), reviewed on a 64×64 ESP32-S3 / Waveshare HUB75 matrix. Rendering is unchanged from the approved `dev.16-preview.7b` baseline; this candidate only changes version metadata and the optional visibility of diagnostics in `/json/info`.
+**Current release: v0.3.0.** Includes 40 effects (30 standard and 10 AudioReactive), reviewed on a 64×64 ESP32-S3 / Waveshare HUB75 matrix. The rendering algorithms remain unchanged from the approved `dev.16-preview.7b` baseline; JSON diagnostics are hidden by default but remain available for development builds.
 
 ## Matrix size and hardware
 
@@ -22,7 +22,7 @@ By default, `/json/info` exposes only these GPT Matrix FX fields:
 ```json
 "gptMatrixFX": {
   "version": "0.3.0",
-  "build": "rc.4",
+  "build": "release",
   "effects": 40,
   "standard": 30,
   "audio": 10

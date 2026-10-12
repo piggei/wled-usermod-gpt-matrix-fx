@@ -1,21 +1,20 @@
 # GPT Matrix FX — Release notes
 
-## v0.3.0-rc.4 — Release candidate
-
-- Default `/json/info` is concise: version, build, effects, standard, audio.
-- All existing diagnostic counters and benchmark computations remain implemented; the complete JSON can be restored at compile time using `GPTFX_ENABLE_JSON_DIAGNOSTICS=1`.
-- No renderer, effect-registration order, palette, or AudioReactive changes compared with the prior v0.3.0 release candidate.
-- Distribution remains limited to the same eight public files.
-
-## v0.3.0 — Planned final release
+## v0.3.0 — Final release
 
 **40 effects**: 30 standard (`GPT01`–`GPT30`) and 10 AudioReactive (`GPTA01`–`GPTA10`), all with final names.
 
-- Promotes the hardware-reviewed RC3 to the final v0.3.0 release without changes to the rendering algorithms, effect order, or palette behavior.
-- Retains the independent, overlapping audio-triggered rings in GPTA05 and the removal of distracting concentric rings from GPTA02 and GPTA07.
-- README includes the YouTube demonstration, two text-based effect tables, 64×64 recommendation (16×16 not recommended), and guidance for handling WLED's effect ID limit using reserved slots.
-- Distribution consists only of the eight public source, metadata, example, license and documentation files. No development CSV, test artifacts, simulated previews or visual assets.
-- Confirmed by the project maintainer that the RC3 source compiles in the Waveshare Kagayaki environment. Validation of extended runtime stability across all effects and hardware configurations is not implied.
+- Promotes the approved RC4 to the v0.3.0 release: no changes to rendering algorithms, effect order, palette behavior, or AudioReactive processing.
+- Keeps overlapping audio-triggered rings in GPTA05, with distracting concentric rings removed from GPTA02 and GPTA07.
+- Keeps the default `/json/info` payload concise (`version`, `build`, `effects`, `standard`, `audio`); the existing diagnostic code and counters remain available with `GPTFX_ENABLE_JSON_DIAGNOSTICS=1`.
+- README provides the YouTube demonstration, complete tables of effects, 64×64 recommendation (16×16 not recommended), and WLED effect-ID / `RSVD` slot guidance.
+- Release package contains only the eight public files. No development CSV, tests, simulated previews or visual assets.
+- Tested on a 64×64 Waveshare ESP32-S3 / HUB75 configuration during development. This does not imply qualification for all hardware, WLED versions or long-running deployments.
+
+## v0.3.0-rc.4
+
+- Made JSON diagnostics opt-in at build time, preserving instrumentation and the rendering code.
+- Distribution remained limited to eight public files.
 
 ## v0.3.0-rc.3
 

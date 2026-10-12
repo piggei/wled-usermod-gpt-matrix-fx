@@ -21,7 +21,7 @@
 
 namespace gptfx {
 constexpr const char* GPTFX_VERSION = "0.3.0";
-constexpr const char* GPTFX_BUILD = "rc.4";
+constexpr const char* GPTFX_BUILD = "release";
 constexpr float K_PI = 3.14159265358979323846f;
 constexpr float K_TAU = 6.28318530717958647692f;
 
