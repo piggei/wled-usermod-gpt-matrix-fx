@@ -4,7 +4,7 @@
 
 **40 original, procedural 2D effects for [WLED](https://github.com/wled/WLED): 30 visual effects and 10 AudioReactive effects.** Designed primarily for a **64×64 LED matrix** and tested during development on an ESP32-S3 / Waveshare HUB75 matrix.
 
-> **Release status:** This source package is based on **v0.3.0-rc.2**. The README is prepared for the public v0.3.0 release; the final release is still pending qualification. The rendering algorithms are frozen from the hardware-reviewed `dev.16-preview.7b` baseline; RC2 changes only release metadata and packaging.
+> **Release status:** This source package is based on **v0.3.0-rc.3**. The README is prepared for the public v0.3.0 release; the final release is still pending qualification. The rendering algorithms are frozen from the hardware-reviewed `dev.16-preview.7b` baseline; RC3 changes only release metadata and packaging.
 
 ## Matrix size and hardware
 
@@ -68,6 +68,21 @@ All 40 effects are listed below. For the most faithful demonstration of their vi
 | **GPTA08 - Spectral Vortex** | A rotating spiral whose arms react to the frequency spectrum. |
 | **GPTA09 - Spectral Ribbons** | Flowing ribbons that bend, brighten and expand with the music. |
 | **GPTA10 - Resonance Cathedral** | Resonant arches and a stained-glass-inspired rosette driven by audio. |
+
+
+### Upgrading a previously used source checkout
+
+This **release archive does not include the development `tests/` directory**.
+If you update an existing checkout with `rsync -a`, old tracked files are not
+removed. In particular, an old `tests/test_host.cpp` may still assert a prior
+`u.gptMatrixFX.build` value and fail although the new source is correct.
+
+Before updating, remove or archive old development-only tracked files using a
+reviewed `git rm` commit (do **not** delete `.git`); then install this archive.
+If a custom installer always invokes `tests/run_host_tests.sh`, adjust the
+installer: run the test only when you explicitly installed a matching test
+suite from your development branch. Do not reintroduce obsolete tests in a
+release just to satisfy an unconditional installer step.
 
 ## Installation with PlatformIO
 
