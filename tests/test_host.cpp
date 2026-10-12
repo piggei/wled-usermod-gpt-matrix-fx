@@ -43,7 +43,7 @@ int main(){
     JsonObject info{&fields, ""};
     globalMod->addToJsonInfo(info);
     assert(fields.at("u.gptMatrixFX.version")=="0.3.0");
-    assert(fields.at("u.gptMatrixFX.build")=="rc.1");
+    assert(fields.at("u.gptMatrixFX.build")=="rc.2");
     assert(fields.at("u.gptMatrixFX.effects")=="40");
     assert(fields.at("u.gptMatrixFX.standard")=="30");
     assert(fields.at("u.gptMatrixFX.audio")=="10");
