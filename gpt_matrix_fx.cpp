@@ -1,6 +1,6 @@
 /*
  * GPT Matrix FX - 40 WLED 2D effects (c) 2026.
- * Version: 0.3.0-rc.2 (30 standard + 10 audio; 0 experimental audio).
+ * Version: 0.3.0 (30 standard + 10 audio; 0 experimental audio).
  * License: MIT. Designed for WLED 0.15+ / modern WLED usermod FX API.
  * No WLED core edits, no display buffers outside WLED's segment storage.
  * The number on the effect name is a stable human label, not a WLED mode ID.
@@ -11,9 +11,17 @@
 #include <stdlib.h>
 #include "gptfx_trig_lut.h"
 
+// Public JSON stays compact; internal profiling and diagnostics remain active.
+#ifndef GPTFX_ENABLE_JSON_DIAGNOSTICS
+#define GPTFX_ENABLE_JSON_DIAGNOSTICS 0
+#endif
+#if GPTFX_ENABLE_JSON_DIAGNOSTICS != 0 && GPTFX_ENABLE_JSON_DIAGNOSTICS != 1
+#error "GPTFX_ENABLE_JSON_DIAGNOSTICS must be 0 or 1"
+#endif
+
 namespace gptfx {
 constexpr const char* GPTFX_VERSION = "0.3.0";
-constexpr const char* GPTFX_BUILD = "rc.2";
+constexpr const char* GPTFX_BUILD = "rc.4";
 constexpr float K_PI = 3.14159265358979323846f;
 constexpr float K_TAU = 6.28318530717958647692f;
 
@@ -2105,6 +2113,7 @@ public:
     info["effects"] = 40;
     info["standard"] = 30;
     info["audio"] = 10;
+#if GPTFX_ENABLE_JSON_DIAGNOSTICS
     info["experimental"] = 0;
     JsonObject trig = info["trigonometry"].to<JsonObject>();
     trig["effect"] = "GPT24";
@@ -2187,6 +2196,7 @@ public:
     perf["phaseWrappedAbs"] = gptfx::gpt24Perf.phaseWrappedAbs;
     perf["width"] = gptfx::gpt24Perf.width;
     perf["height"] = gptfx::gpt24Perf.height;
+#endif // GPTFX_ENABLE_JSON_DIAGNOSTICS
   }
   uint16_t getId() override { return USERMOD_ID_UNSPECIFIED; }
 };

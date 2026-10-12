@@ -4,7 +4,7 @@
 
 **40 original, procedural 2D effects for [WLED](https://github.com/wled/WLED): 30 visual effects and 10 AudioReactive effects.** Designed primarily for a **64×64 LED matrix** and tested during development on an ESP32-S3 / Waveshare HUB75 matrix.
 
-> **Release status:** This source package is based on **v0.3.0-rc.2**. The README is prepared for the public v0.3.0 release; the final release is still pending qualification. The rendering algorithms are frozen from the hardware-reviewed `dev.16-preview.7b` baseline; RC2 changes only release metadata and packaging.
+**Current candidate: v0.3.0-rc.4.** Includes 40 effects (30 standard and 10 AudioReactive), reviewed on a 64×64 ESP32-S3 / Waveshare HUB75 matrix. Rendering is unchanged from the approved `dev.16-preview.7b` baseline; this candidate only changes version metadata and the optional visibility of diagnostics in `/json/info`.
 
 ## Matrix size and hardware
 
@@ -14,6 +14,22 @@
 - **AudioReactive effects:** require WLED's [AudioReactive](https://kno.wled.ge/advanced/audio-reactive/) support and an active audio input. Standard effects do not require sound.
 
 The effects draw into WLED's 2D segment. Available frame rate depends on the display driver, other usermods, rendering complexity and matrix settings. Some effects are substantially more computationally expensive than others.
+
+## JSON information and optional diagnostics
+
+By default, `/json/info` exposes only these GPT Matrix FX fields:
+
+```json
+"gptMatrixFX": {
+  "version": "0.3.0",
+  "build": "rc.4",
+  "effects": 40,
+  "standard": 30,
+  "audio": 10
+}
+```
+
+All profiling counters, trigonometry benchmarks, phase tracking and GPT10 diagnostics remain implemented and collected internally. They are simply omitted from the public JSON to avoid a large diagnostic payload. For a development build only, add `-D GPTFX_ENABLE_JSON_DIAGNOSTICS=1` to the existing PlatformIO build flags to restore the complete diagnostics (`experimental`, `trigonometry`, `extraPerformance`, `gpt10Diagnostics`, `performance`). The default is `0`; no renderer, palette or FFT algorithm is changed by this switch.
 
 ## Effect catalog
 
@@ -69,6 +85,21 @@ All 40 effects are listed below. For the most faithful demonstration of their vi
 | **GPTA09 - Spectral Ribbons** | Flowing ribbons that bend, brighten and expand with the music. |
 | **GPTA10 - Resonance Cathedral** | Resonant arches and a stained-glass-inspired rosette driven by audio. |
 
+
+### Upgrading a previously used source checkout
+
+This **release archive does not include the development `tests/` directory**.
+If you update an existing checkout with `rsync -a`, old tracked files are not
+removed. In particular, an old `tests/test_host.cpp` may still assert a prior
+`u.gptMatrixFX.build` value and fail although the new source is correct.
+
+Before updating, remove or archive old development-only tracked files using a
+reviewed `git rm` commit (do **not** delete `.git`); then install this archive.
+If a custom installer always invokes `tests/run_host_tests.sh`, adjust the
+installer: run the test only when you explicitly installed a matching test
+suite from your development branch. Do not reintroduce obsolete tests in a
+release just to satisfy an unconditional installer step.
+
 ## Installation with PlatformIO
 
 This repository is an **external WLED usermod**, not a standalone firmware binary. Add this directory to your WLED project's existing PlatformIO `custom_usermods` configuration; keep the other configured usermods:
@@ -114,16 +145,11 @@ Each effect exposes WLED's standard controls (such as Speed and Intensity) plus 
 
 `/json/info` exposes data under `u.gptMatrixFX`, including `version`, `build`, `effects`, `standard`, `audio`, `experimental`, and performance diagnostics. The module contributes diagnostics without replacing other usermod fields. The WLED global `leds.fps` reflects the full WLED/display pipeline, not only the cost of the selected effect renderer.
 
-## Development and tests
+## Release package
 
-The project includes a deterministic host WLED mock and regression tests:
+This distribution contains only the WLED usermod source files, library metadata, installation example, license, README and release notes. Development diagnostics, tests, simulated visuals, and generated previews are not included.
 
-```sh
-sh tests/run_host_tests.sh
-sh tests/run_sanitizers.sh
-```
-
-The release source archive is intentionally kept lean: it contains production code, documentation, and a host smoke-test suite, but no historical CSV diagnostics, generated previews, benchmark outputs, or experimental build notes. Full-device compilation and extended hardware stability remain release gates.
+The release was built and tested by the project maintainer on the Waveshare environment. Frame rates and stability may vary on other WLED forks and hardware.
 
 ## License
 
