@@ -1,4 +1,18 @@
-# GPT Matrix FX v0.2.2
+# GPT Matrix FX release notes
+
+## v0.3.0-rc.1 — release candidate (not final)
+
+- 40 approved effects: 30 standard (`GPT01`–`GPT30`) and 10 AudioReactive (`GPTA01`–`GPTA10`). The five most recent audio effects are promoted from `GPTA06b`–`GPTA10b` without changing their renderers.
+- `build=rc.1`, `experimental=0`, updated `library.json`, README and host metadata expectations.
+- Retains the hardware-approved dev.16-preview.7b visuals and beat behavior: no full-screen beat ring in GPTA02/GPTA07; GPTA05 accumulates independent fading waves.
+- WLED automatic effect IDs have an 8-bit limit. Refer to README for `RSVD` slot filtering, preset ID migration, and optional fork-only customization.
+- Candidate passes host/sanitizers and Stage-1/Stage-2A tests. Historical Stage-2B golden checks for GPTA02 fail on this RC **and on dev.16-preview.7b**, due to the intentionally removed ring; see RC1_RELEASE_CHECKLIST.md. Full Kagayaki PlatformIO compilation, 40-effect registration confirmation and long-duration on-device stability are release gates. No claim of final hardware qualification is made.
+
+---
+
+# Historical releases
+
+## GPT Matrix FX v0.2.2
 
 First public source release of **GPT Matrix FX**, an external PlatformIO usermod providing **25 original effects for WLED 2D LED matrices**.
 

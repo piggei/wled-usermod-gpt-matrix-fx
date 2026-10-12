@@ -43,11 +43,11 @@ int main(){
     JsonObject info{&fields, ""};
     globalMod->addToJsonInfo(info);
     assert(fields.at("u.gptMatrixFX.version")=="0.3.0");
-    assert(fields.at("u.gptMatrixFX.build")=="dev.16-preview.7b");
+    assert(fields.at("u.gptMatrixFX.build")=="rc.1");
     assert(fields.at("u.gptMatrixFX.effects")=="40");
     assert(fields.at("u.gptMatrixFX.standard")=="30");
     assert(fields.at("u.gptMatrixFX.audio")=="10");
-    assert(fields.at("u.gptMatrixFX.experimental")=="5");
+    assert(fields.at("u.gptMatrixFX.experimental")=="0");
     assert(fields.at("u.gptMatrixFX.performance.effect")=="GPT24");
     assert(fields.at("u.gptMatrixFX.performance.rendered")=="0");
     assert(fields.at("u.gptMatrixFX.trigonometry.effect")=="GPT24");
@@ -68,7 +68,7 @@ int main(){
     if(n<NORMAL) std::snprintf(want,sizeof(want),"GPT%02zu - ",n+1);
     else if(n<NORMAL+AUDIO) std::snprintf(want,sizeof(want),"GPTA%02zu - ",n-NORMAL+1);
     else if(n<NORMAL+AUDIO+EXPERIMENTAL) std::snprintf(want,sizeof(want),"GPT%02zu - ",n-AUDIO+1);
-    else std::snprintf(want,sizeof(want),"GPTA%02zub - ",n-(NORMAL+AUDIO+EXPERIMENTAL)+6);
+    else std::snprintf(want,sizeof(want),"GPTA%02zu - ",n-(NORMAL+AUDIO+EXPERIMENTAL)+6);
     assert(std::strstr(fx.name,want)==fx.name);
     assert(fx.id==255);
     if((n>=NORMAL && n<NORMAL+AUDIO) || n>=NORMAL+AUDIO+EXPERIMENTAL) assert(std::strstr(fx.name,";2v;")!=nullptr);

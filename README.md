@@ -1,13 +1,14 @@
 # GPT Matrix FX — WLED 2D matrix effects
 
-**Current development snapshot:** `v0.3.0-dev.16-preview.7b` (experimental; not the final v0.3.0 release).  
-**40 effects:** `GPT01`–`GPT30` (30 standard) and `GPTA01`–`GPTA10b` (10 AudioReactive).  
-**Hardware target:** WLED on ESP32-S3 with a 2D matrix, especially a 64×64 HUB75 panel.  
-**Last stable release:** v0.2.2 with 25 effects; keep the stable release separate from this development snapshot.
+**Release candidate:** `v0.3.0-rc.1` — 40 approved effects: **GPT01–GPT30** (30 standard) and **GPTA01–GPTA10** (10 AudioReactive). **No beta effect suffixes remain.** This is a release candidate, not a final or independently hardware-qualified release.
 
-`GPT21`–`GPT30` have graduated from beta without changes to their accepted renderer algorithms. The five newest AudioReactive modes are still marked beta in the effect selector: `GPTA06b` Pulse Architecture, `GPTA07b` Harmonic Constellations, `GPTA08b` Spectral Vortex, `GPTA09b` **Spectral Ribbons**, and `GPTA10b` Resonance Cathedral. They retain the beta suffix in this snapshot; a final release requires explicit promotion and validation. The file [DEV16_PREVIEW7_NOTES.md](DEV16_PREVIEW7_NOTES.md) describes the current audio full-scale qualification.
+**Hardware:** WLED 2D matrix, especially ESP32-S3 / Waveshare HUB75 64×64. **Public stable release:** v0.2.2 (25 effects), kept unchanged.
 
-This is an **external PlatformIO usermod**. Its effect registration uses `strip.addEffect(255, ...)`; no core WLED patch is required *by this library*. A WLED build already near its effect-ID limit may need a separate core-side registration filter, described below. Host tests and RGB simulator outputs do not replace firmware compilation and real hardware verification.
+This is an external PlatformIO usermod. Its effect registration uses `strip.addEffect(255, ...)` for dynamic IDs. The optional WLED core effect-registration filter is separately maintained; see below. Keep the WLED AudioReactive usermod enabled for GPTA01–GPTA10.
+
+**Release candidate scope:** compared with the hardware-approved `dev.16-preview.7b`, the only runtime changes are labels (`GPTA06`–`GPTA10` → `GPTA06`–`GPTA10`), build metadata, and `experimental: 0`. Rendering formulas, effect registration order and settings are unchanged. The recent edits to GPTA02 (no beat ring), GPTA05 (independent, overlapping beat waves) and GPTA07 (no beat ring) are preserved as-is.
+
+Read [RC1_RELEASE_CHECKLIST.md](RC1_RELEASE_CHECKLIST.md) for release validation and limitations.
 
 ## Effect ID limit, missing effects, and reserved slots
 
@@ -28,17 +29,17 @@ This is an **external PlatformIO usermod**. Its effect registration uses `strip.
 
 **Reverting the filter:** Remove its macro/build flag or restore the unmodified `FX.cpp` (and rebuild). GPT Matrix FX itself does not require this customization on WLED builds that have enough free slots.
 
-## Current effect catalog (v0.3.0-dev.16-preview.7b)
+## Current effect catalog (v0.3.0-rc.1)
 
 **Additional standard effects:** `GPT21` Sparse Ripple Brightness; `GPT22` Sparse Ripple Size; `GPT23` Photon Loom; `GPT24` Kinetic Rosettes; `GPT25` Tidal Glyphs; `GPT26` Iridescent Membranes; `GPT27` Crystal Recursion; `GPT28` Luminous Mycelium; `GPT29` Prismatic Comets; `GPT30` Moiré Engine.
 
-**Additional AudioReactive effects:** `GPTA06b` Pulse Architecture; `GPTA07b` Harmonic Constellations; `GPTA08b` Spectral Vortex; `GPTA09b` Spectral Ribbons; `GPTA10b` Resonance Cathedral. The five earlier `GPTA01`–`GPTA04` are unchanged. GPTA05 Synaptic Reef now launches independent, overlapping beat ripples rather than restarting a single ring. GPTA02 and GPTA07b no longer display the beat-triggered full-screen rings.
+**Additional AudioReactive effects:** `GPTA06` Pulse Architecture; `GPTA07` Harmonic Constellations; `GPTA08` Spectral Vortex; `GPTA09` Spectral Ribbons; `GPTA10` Resonance Cathedral. The five earlier `GPTA01`–`GPTA04` are unchanged. GPTA05 Synaptic Reef now launches independent, overlapping beat ripples rather than restarting a single ring. GPTA02 and GPTA07 no longer display the beat-triggered full-screen rings.
 
 See [EXPERIMENTAL_SPARSE_RIPPLE.md](EXPERIMENTAL_SPARSE_RIPPLE.md) for the historical beta development and attribution of GPT21–GPT25.
 
 ---
 
-## Historical development notes (dev.14a and later)
+## Historical development notes (dev.14a and later) — archived, not current release guidance
 
 
 ## Current dev.14a GPT10 correction
@@ -62,7 +63,7 @@ dev.14 in host tests. To preserve the exact original dev.14 renderer,
 disable **both** new flags. Run `sh tests/run_gpt10_remediation_tests.sh`
 for all four compile-time variants.
 
-**dev.14a is experimental and not yet ESP32-S3 hardware-qualified.**
+**Historical note:** dev.14a was experimental at the time; this statement does not describe the current release candidate.
 
 ## PlatformIO
 
@@ -81,7 +82,7 @@ sh tests/run_host_tests.sh
 sh tests/run_sanitizers.sh
 ```
 
-No WLED core modifications are required. This is a test candidate, not a release.
+No WLED core modifications are required by the usermod itself; high-effect-count forks may need the optional registration filter above. This package is a release candidate, not the final release.
 
 ## Runtime diagnostics
 
@@ -98,7 +99,7 @@ No WLED core modifications are required. This is a test candidate, not a release
 The usermod writes its diagnostics to `/json/info` under `u.gptMatrixFX` alongside other usermod information. This is separate from `/json/state` and its `u` usermod state/configuration object. The module does not replace the existing `u` object.
 
 ```json
-{ "u": { "gptMatrixFX": { "version": "0.3.0", "build": "dev.14a", "effects": 30, "standard": 20, "audio": 5, "experimental": 5 } } }
+{ "u": { "gptMatrixFX": { "version": "0.3.0", "build": "rc.1", "effects": 40, "standard": 30, "audio": 10, "experimental": 0 } } }
 ```
 
 ## Experimental GPT24b performance telemetry (v0.3.0-dev.7)

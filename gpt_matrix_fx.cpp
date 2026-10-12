@@ -1,6 +1,6 @@
 /*
  * GPT Matrix FX - 40 WLED 2D effects (c) 2026.
- * Version: 0.3.0-dev.16-preview.7b (30 standard + 10 audio; 5 experimental audio).
+ * Version: 0.3.0-rc.1 (30 standard + 10 audio; 0 experimental audio).
  * License: MIT. Designed for WLED 0.15+ / modern WLED usermod FX API.
  * No WLED core edits, no display buffers outside WLED's segment storage.
  * The number on the effect name is a stable human label, not a WLED mode ID.
@@ -13,7 +13,7 @@
 
 namespace gptfx {
 constexpr const char* GPTFX_VERSION = "0.3.0";
-constexpr const char* GPTFX_BUILD = "dev.16-preview.7b";
+constexpr const char* GPTFX_BUILD = "rc.1";
 constexpr float K_PI = 3.14159265358979323846f;
 constexpr float K_TAU = 6.28318530717958647692f;
 
@@ -1802,7 +1802,7 @@ static inline float newAudioDrive(uint8_t band) {
   return e*(1.52f-.52f*e); // 0 -> 0, 255 -> 1; increased mid-range sensitivity
 }
 
-// GPTA06b: Pulse Architecture. A spectral skyline with secondary luminous
+// GPTA06: Pulse Architecture. A spectral skyline with secondary luminous
 // terraces; energy changes column height, while the bass launches floor pulses.
 // All geometry is calculated per column, outside the pixel loop.
 static void mode_audio6() {
@@ -1840,9 +1840,9 @@ static void mode_audio6() {
     SEGMENT.setPixelColorXY(x,y,chroma(k*13.0f+t*5.0f+SEGMENT.custom2*.58f,lum*(.70f+.30f*d)));
   }
 }
-static const char ma6[] PROGMEM="GPTA06b - Pulse Architecture@Motion,Impact,Buildings,Hue;!,!;!;2v;sx=118,ix=185,c1=125,c2=125";
+static const char ma6[] PROGMEM="GPTA06 - Pulse Architecture@Motion,Impact,Buildings,Hue;!,!;!;2v;sx=118,ix=185,c1=125,c2=125";
 
-// GPTA07b: Harmonic Constellations, expanded into a full-canvas stellar lattice.
+// GPTA07: Harmonic Constellations, expanded into a full-canvas stellar lattice.
 // Each of the sixteen FFT bands moves one star and controls its halo. Band
 // contrasts control luminous bridges; no full-screen shockwave overlay.
 // Geometry is precomputed outside the 4096-pixel loop; no frame heap usage.
@@ -1904,9 +1904,9 @@ static void mode_audio7() {
     SEGMENT.setPixelColorXY(x,y,chroma(dominant*15.0f+t*4.0f+SEGMENT.custom2*.6f,lum));
   }
 }
-static const char ma7[] PROGMEM="GPTA07b - Harmonic Constellations@Orbit,Starlight,Links,Hue;!,!;!;2v;sx=120,ix=185,c1=125,c2=128";
+static const char ma7[] PROGMEM="GPTA07 - Harmonic Constellations@Orbit,Starlight,Links,Hue;!,!;!;2v;sx=120,ix=185,c1=125,c2=128";
 
-// GPTA08b: Spectral Vortex. FFT values create twelve rotating spiral arms;
+// GPTA08: Spectral Vortex. FFT values create twelve rotating spiral arms;
 // bounded phase and precomputed band weights avoid temporal slowdowns.
 static void mode_audio8() {
   if(!ready() || !tick(35))return;
@@ -1932,9 +1932,9 @@ static void mode_audio8() {
     SEGMENT.setPixelColorXY(x,y,chroma(k*14.5f+r*85.0f+t*8.0f+SEGMENT.custom2*.5f,lum));
   }
 }
-static const char ma8[] PROGMEM="GPTA08b - Spectral Vortex@Rotation,Energy,Spiral Density,Hue;!,!;!;2v;sx=115,ix=195,c1=120,c2=120";
+static const char ma8[] PROGMEM="GPTA08 - Spectral Vortex@Rotation,Energy,Spiral Density,Hue;!,!;!;2v;sx=115,ix=195,c1=120,c2=120";
 
-// GPTA09b: Spectral Ribbons. Completely new renderer in place of Fireflies:
+// GPTA09: Spectral Ribbons. Completely new renderer in place of Fireflies:
 // six full-width interacting light-streams, with spectral shape modulation,
 // bass widening and transient traveling streaks. No per-pixel sin/sqrt,
 // no extra framebuffer and no per-frame heap or large stack buffers.
@@ -1982,9 +1982,9 @@ static void mode_audio9() {
     }
   }
 }
-static const char ma9[] PROGMEM="GPTA09b - Spectral Ribbons@Flow,Resonance,Braids,Hue;!,!;!;2v;sx=130,ix=190,c1=128,c2=130";
+static const char ma9[] PROGMEM="GPTA09 - Spectral Ribbons@Flow,Resonance,Braids,Hue;!,!;!;2v;sx=130,ix=190,c1=128,c2=130";
 
-// GPTA10b: Resonance Cathedral. Stained-glass vaulted arches, translucent
+// GPTA10: Resonance Cathedral. Stained-glass vaulted arches, translucent
 // vertical columns and an FFT-controlled rose window. No per-frame heap work.
 static void mode_audio10() {
   if(!ready() || !tick(36))return;
@@ -2010,18 +2010,18 @@ static void mode_audio10() {
     SEGMENT.setPixelColorXY(x,y,chroma(k*16.0f+45.0f*e+t*6.0f+SEGMENT.custom2*.5f,lum));
   }
 }
-static const char ma10[] PROGMEM="GPTA10b - Resonance Cathedral@Breathing,Stained Glass,Arches,Hue;!,!;!;2v;sx=115,ix=195,c1=130,c2=128";
+static const char ma10[] PROGMEM="GPTA10 - Resonance Cathedral@Breathing,Stained Glass,Arches,Hue;!,!;!;2v;sx=115,ix=195,c1=130,c2=128";
 
 static void mode_gpt26_profiled(){profileExtra("GPT26",mode_gpt26);}
 static void mode_gpt27_profiled(){profileExtra("GPT27",mode_gpt27);}
 static void mode_gpt28_profiled(){profileExtra("GPT28",mode_gpt28);}
 static void mode_gpt29_profiled(){profileExtra("GPT29",mode_gpt29);}
 static void mode_gpt30_profiled(){profileExtra("GPT30",mode_gpt30);}
-static void mode_audio6_profiled(){profileExtra("GPTA06b",mode_audio6);}
-static void mode_audio7_profiled(){profileExtra("GPTA07b",mode_audio7);}
-static void mode_audio8_profiled(){profileExtra("GPTA08b",mode_audio8);}
-static void mode_audio9_profiled(){profileExtra("GPTA09b",mode_audio9);}
-static void mode_audio10_profiled(){profileExtra("GPTA10b",mode_audio10);}
+static void mode_audio6_profiled(){profileExtra("GPTA06",mode_audio6);}
+static void mode_audio7_profiled(){profileExtra("GPTA07",mode_audio7);}
+static void mode_audio8_profiled(){profileExtra("GPTA08",mode_audio8);}
+static void mode_audio9_profiled(){profileExtra("GPTA09",mode_audio9);}
+static void mode_audio10_profiled(){profileExtra("GPTA10",mode_audio10);}
 static void mode_gpt1_profiled(){profileExtra("GPT01",mode_gpt1);}
 static void mode_gpt2_profiled(){profileExtra("GPT02",mode_gpt2);}
 static void mode_gpt9_profiled(){profileExtra("GPT09",mode_gpt9);}
@@ -2077,7 +2077,7 @@ public:
     strip.addEffect(255, &gptfx::mode_audio3_profiled, gptfx::ma3);
     strip.addEffect(255, &gptfx::mode_audio4_profiled, gptfx::ma4);
     strip.addEffect(255, &gptfx::mode_audio5_profiled, gptfx::ma5);
-    // Experimental effects are appended: existing dynamic IDs keep their order.
+    // Additional standard effects stay appended: existing dynamic IDs keep their order.
     strip.addEffect(255, &gptfx::mode_gpt21, gptfx::m21);
     strip.addEffect(255, &gptfx::mode_gpt22, gptfx::m22);
     strip.addEffect(255, &gptfx::mode_gpt23_profiled, gptfx::m23);
@@ -2088,7 +2088,7 @@ public:
     strip.addEffect(255, &gptfx::mode_gpt28_profiled, gptfx::m28);
     strip.addEffect(255, &gptfx::mode_gpt29_profiled, gptfx::m29);
     strip.addEffect(255, &gptfx::mode_gpt30_profiled, gptfx::m30);
-    // New audio betas are appended, so all previously registered IDs stay fixed.
+    // Five promoted audio effects remain appended, so all previously registered IDs stay fixed.
     strip.addEffect(255, &gptfx::mode_audio6_profiled, gptfx::ma6);
     strip.addEffect(255, &gptfx::mode_audio7_profiled, gptfx::ma7);
     strip.addEffect(255, &gptfx::mode_audio8_profiled, gptfx::ma8);
@@ -2105,7 +2105,7 @@ public:
     info["effects"] = 40;
     info["standard"] = 30;
     info["audio"] = 10;
-    info["experimental"] = 5;
+    info["experimental"] = 0;
     JsonObject trig = info["trigonometry"].to<JsonObject>();
     trig["effect"] = "GPT24";
     trig["backend"] = gptfx_trig::backendName();
