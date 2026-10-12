@@ -1,195 +1,156 @@
-# GPT Matrix FX — 25 original 2D effects for WLED
+# GPT Matrix FX — 40 original WLED matrix effects
 
 [![GPT Matrix FX - 20 Original WLED Matrix Effects](https://img.youtube.com/vi/CnXsLasY7FU/maxresdefault.jpg)](https://www.youtube.com/watch?v=CnXsLasY7FU)
 
-**Release:** v0.2.2 (public release)  
-**Effects:** 20 standalone matrix effects (`GPT01`–`GPT20`) + 5 AudioReactive effects (`GPTA01`–`GPTA05`)  
-**Target:** WLED with a 2D matrix; designed around 64×64 on an ESP32-S3 / HUB75 setup  
-**Integration:** external PlatformIO usermod library, placed next to the WLED source tree. No changes to WLED's core source files.
+**40 original, procedural 2D effects for [WLED](https://github.com/wled/WLED): 30 visual effects and 10 AudioReactive effects.** Designed primarily for a **64×64 LED matrix** and tested during development on an ESP32-S3 / Waveshare HUB75 matrix.
 
-**Authorship:** All 25 effects, their C++ implementation, tests, and project documentation were created by **ChatGPT (OpenAI)**. The repository maintainer provided the project brief, creative feedback, real-hardware testing, and release publishing. This is an independent community project, not an official OpenAI or WLED product.
+**Current release: v0.3.0.** Includes 40 effects (30 standard and 10 AudioReactive), reviewed on a 64×64 ESP32-S3 / Waveshare HUB75 matrix. The rendering algorithms remain unchanged from the approved `dev.16-preview.7b` baseline; JSON diagnostics are hidden by default but remain available for development builds.
 
-The WLED build, display and matrix configuration, preset handling, palettes, and audio processing remain owned by WLED. This project only registers additional WLED effects.
+## Matrix size and hardware
+
+- **Recommended matrix:** 64×64 (4,096 pixels). This is the canvas on which the effects were designed, visually reviewed and tested.
+- **16×16:** **Not recommended.** Real-device trials show that the intricate geometries and details do not translate well to 16×16. The renderer may run, but the result does not represent the intended artwork.
+- **Other dimensions:** 2D rendering supports other matrix sizes in principle, but aesthetic quality and performance are not established for every size; they are **not** equivalent to 64×64 qualification.
+- **AudioReactive effects:** require WLED's [AudioReactive](https://kno.wled.ge/advanced/audio-reactive/) support and an active audio input. Standard effects do not require sound.
+
+The effects draw into WLED's 2D segment. Available frame rate depends on the display driver, other usermods, rendering complexity and matrix settings. Some effects are substantially more computationally expensive than others.
+
+## JSON information and optional diagnostics
+
+By default, `/json/info` exposes only these GPT Matrix FX fields:
+
+```json
+"gptMatrixFX": {
+  "version": "0.3.0",
+  "build": "release",
+  "effects": 40,
+  "standard": 30,
+  "audio": 10
+}
+```
+
+All profiling counters, trigonometry benchmarks, phase tracking and GPT10 diagnostics remain implemented and collected internally. They are simply omitted from the public JSON to avoid a large diagnostic payload. For a development build only, add `-D GPTFX_ENABLE_JSON_DIAGNOSTICS=1` to the existing PlatformIO build flags to restore the complete diagnostics (`experimental`, `trigonometry`, `extraPerformance`, `gpt10Diagnostics`, `performance`). The default is `0`; no renderer, palette or FFT algorithm is changed by this switch.
 
 ## Effect catalog
 
-### Standalone effects
+All 40 effects are listed below. For the most faithful demonstration of their visual appearance, watch the video above or test them on a 64×64 LED matrix. No simulated images or animated previews are included.
 
-| UI name | Description | Origin |
-| --- | --- | --- |
-| GPT01 - Caustic Atlas | Orbiting virtual emitters refract and interfere to produce luminous optical caustics. | Preserved from v0.1.1 |
-| GPT02 - Voronoi Bloom | Animated Voronoi membranes and pulsing seeds. | Preserved |
-| GPT03 - Origami Reactor | Polygonal paper-fold geometry with moving creases and facets. | Preserved |
-| GPT04 - Ink Tectonics | Excitable cellular automaton, propagating fronts and refractory trails. | Preserved |
-| GPT05 - Event Horizon | Gravitationally distorted streams and a ringed accretion disk. | Preserved |
-| **GPT06 - Clockwork Cathedral** | **Moving epicyclic mechanism**: two gear-meshed satellites orbit the rotating central gear while the entire assembly drifts and subtly breathes in size; moving spokes, enamel glitter and luminous pins remain attached to their respective gears. | Animated in v0.2.2 |
-| GPT07 - Impossible Lattice | Nested folded tessellations and geometric mirrors. | Preserved |
-| GPT08 - Aether Topography | Heightfield isolines and drifting escarpments. | Preserved |
-| GPT09 - Mandelglass | Glassy cells traced through an animated complex Julia system. | New |
-| GPT10 - Glass Circuit | Electrically animated traces, signal packets, and glowing junctions. | New |
-| GPT11 - Aurora Loom | Undulating interwoven luminescent threads with alternating over/under crossings. | New |
-| GPT12 - Lagrange Ballet | Three orbiting bodies sculpt a gravitational equipotential contour map. | New |
-| GPT13 - Chromatic Kintsugi | Moving faceted surfaces stitched together by luminous cracks. | New |
-| GPT14 - Phantom Elevator | Depth-projected perspective corridor with seemingly endless ascending beams. | New |
-| GPT15 - Ferrofluid Theatre | Two orbiting magnetic poles bend spikes and liquid-metal field contours. | New |
-| GPT16 - Riemann Current | Counterwinding logarithmic vortices with intersecting streamlines. | New |
-| GPT17 - Constellation Engine | A moving astronomical chart of points connected by rotating chords. | New |
-| GPT18 - Vitreous Labyrinth | Multi-scale reflective corridors and luminous paths. | New |
-| GPT19 - Celestial Runewheel | Four nested rotating dials, orbiting markings and a sweeping indicator. | New |
-| GPT20 - Zenith Quasicrystal | Five-axis quasiperiodic interference, revealing wandering star-like nodes. | New |
+### Standard effects (GPT01–GPT30)
 
-### AudioReactive effects
+| UI name | Description |
+| --- | --- |
+| **GPT01 - Caustic Atlas** | Fluid caustic light patterns with shifting refractions and prismatic interference. |
+| **GPT02 - Voronoi Bloom** | Growing, colorful Voronoi cells with animated borders and soft internal detail. |
+| **GPT03 - Origami Reactor** | Folding angular surfaces with layered, rotating origami geometry. |
+| **GPT04 - Ink Tectonics** | Flowing, cellular ink-like patterns that grow and reorganize over time. |
+| **GPT05 - Event Horizon** | A luminous accretion structure circling a dark gravitational center. |
+| **GPT06 - Clockwork Cathedral** | Interlocking mechanical and architectural forms with clockwork rotation. |
+| **GPT07 - Impossible Lattice** | Recursive faceted lattices that drift through impossible-looking geometry. |
+| **GPT08 - Aether Topography** | Undulating terrain and contour lines forming an abstract glowing landscape. |
+| **GPT09 - Mandelglass** | Fractal-inspired glass surfaces with shifting reflections and intricate detail. |
+| **GPT10 - Glass Circuit** | An illuminated circuit network with moving signals and glass-like traces. |
+| **GPT11 - Aurora Loom** | Soft, aurora-like luminous threads flowing through layered fields. |
+| **GPT12 - Lagrange Ballet** | Orbital contours tracing a graceful interplay of moving attractors. |
+| **GPT13 - Chromatic Kintsugi** | Colored fractured surfaces traced by slowly moving luminous seams. |
+| **GPT14 - Phantom Elevator** | Repeating perspective structures that suggest an endless vertical passage. |
+| **GPT15 - Ferrofluid Theatre** | Ferrofluid-inspired magnetic spikes and smoothly deforming silhouettes. |
+| **GPT16 - Riemann Current** | Winding currents and vortices producing rich shifting mathematical textures. |
+| **GPT17 - Constellation Engine** | Luminous stars and connecting geometry moving in an orbital web. |
+| **GPT18 - Vitreous Labyrinth** | A continuously folding labyrinth with translucent glowing passages. |
+| **GPT19 - Celestial Runewheel** | Rotating circular glyphs and fine radial celestial markings. |
+| **GPT20 - Zenith Quasicrystal** | Layered quasi-crystalline geometry with radiant symmetrical facets. |
+| **GPT21 - Sparse Ripple Brightness** | A sparse grid of luminous dots whose brightness follows travelling waves. |
+| **GPT22 - Sparse Ripple Size** | Travelling ripples that animate the size of dots in a sparse lattice. |
+| **GPT23 - Photon Loom** | Intersecting, pulsing threads of light with a woven appearance. |
+| **GPT24 - Kinetic Rosettes** | Orbiting, multi-petaled rosettes leaving elegant luminous traces. |
+| **GPT25 - Tidal Glyphs** | Moving geometric glyphs shaped by slow tidal modulation. |
+| **GPT26 - Iridescent Membranes** | Fluid iridescent membranes with smooth color fades and organic outlines. |
+| **GPT27 - Crystal Recursion** | Layered crystalline facets that rotate and refract colored light. |
+| **GPT28 - Luminous Mycelium** | An evolving bioluminescent branching network with glowing filaments. |
+| **GPT29 - Prismatic Comets** | Bright prismatic streaks and moving luminous comet-like trails. |
+| **GPT30 - Moire Engine** | Hypnotic interference from moving, overlapping moiré patterns. |
 
-| UI name | Audio response | Origin |
-| --- | --- | --- |
-| GPTA01 - Bass Cartographer | Sixteen spectral sectors reshape a luminous polar coastline. | Previously GPT9 |
-| GPTA02 - Harmonic Wormholes | Sixteen frequency-driven portals; rising sample peaks add shockwaves. | Previously GPT10 |
-| GPTA03 - Spectral Loom | Each of the 16 bands drives a separate braided luminous ribbon. | New |
-| GPTA04 - Resonant Tessellator | Hexagonal facets brighten, shift hue and deform in response to assigned FFT bands. | New |
-| GPTA05 - Synaptic Reef | Branching coral arms grow with the spectrum; detected peaks send outward pulses. | New |
+### AudioReactive effects (GPTA01–GPTA10)
 
-All effects are procedurally implemented in this package. They are **not copies of WLED's built-in effects**, although some explore established mathematical concepts such as Voronoi diagrams, Julia sets, and contour maps.
+| UI name | Description |
+| --- | --- |
+| **GPTA01 - Bass Cartographer** | Audio-driven polar contours that map bass energy into moving terrain. |
+| **GPTA02 - Harmonic Wormholes** | Harmonic energy creates animated portals and luminous depth. |
+| **GPTA03 - Spectral Loom** | Frequency bands weave an animated braid of glowing threads. |
+| **GPTA04 - Resonant Tessellator** | Spectrum-controlled faceted tiles forming a resonant geometric mosaic. |
+| **GPTA05 - Synaptic Reef** | An organic reef with independent concentric waves launched by successive beats. |
+| **GPTA06 - Pulse Architecture** | Spectral towers whose heights and internal light detail follow the music. |
+| **GPTA07 - Harmonic Constellations** | A full-matrix constellation with stars and links responding to audio bands. |
+| **GPTA08 - Spectral Vortex** | A rotating spiral whose arms react to the frequency spectrum. |
+| **GPTA09 - Spectral Ribbons** | Flowing ribbons that bend, brighten and expand with the music. |
+| **GPTA10 - Resonance Cathedral** | Resonant arches and a stained-glass-inspired rosette driven by audio. |
 
-## Installation
 
-### Directory layout
+### Upgrading a previously used source checkout
 
-Place the extracted `wled-usermod-gpt-matrix-fx` directory **beside** your WLED checkout:
+This **release archive does not include the development `tests/` directory**.
+If you update an existing checkout with `rsync -a`, old tracked files are not
+removed. In particular, an old `tests/test_host.cpp` may still assert a prior
+`u.gptMatrixFX.build` value and fail although the new source is correct.
 
-```text
-workspace/
-├── WLED/
-│   ├── platformio.ini
-│   └── platformio_override.ini
-└── wled-usermod-gpt-matrix-fx/
-    ├── gpt_matrix_fx.cpp
-    ├── library.json
-    ├── README.md
-    ├── TEST_REPORT.md
-    ├── examples/
-    └── tests/
-```
+Before updating, remove or archive old development-only tracked files using a
+reviewed `git rm` commit (do **not** delete `.git`); then install this archive.
+If a custom installer always invokes `tests/run_host_tests.sh`, adjust the
+installer: run the test only when you explicitly installed a matching test
+suite from your development branch. Do not reintroduce obsolete tests in a
+release just to satisfy an unconditional installer step.
 
-### PlatformIO: add one line, not a new configuration
+## Installation with PlatformIO
 
-In the existing `custom_usermods` list for your active WLED PlatformIO environment (for example, `[env:YOUR_WLED_ENV]`), **append only one** of these entries. Keep any existing usermods and the rest of the PlatformIO settings unchanged.
-
-**Option A — relative path (recommended with sibling directories):**
+This repository is an **external WLED usermod**, not a standalone firmware binary. Add this directory to your WLED project's existing PlatformIO `custom_usermods` configuration; keep the other configured usermods:
 
 ```ini
-  symlink://../wled-usermod-gpt-matrix-fx
+custom_usermods =
+    symlink://../wled-usermod-gpt-matrix-fx
 ```
 
-The path is relative to the WLED project root (the directory containing its `platformio.ini`). The `..` selects the parent directory, then enters the usermod package directory. This survives moving both repositories together.
-
-**Option B — absolute path (replace with the actual path on your system):**
-
-```ini
-  symlink:///absolute/path/to/wled-usermod-gpt-matrix-fx
-```
-
-This points to an exact filesystem location. It needs editing when moving to a different machine or changing directory names. Do not add both entries.
-
-If `custom_usermods` already uses `${...}` inheritance, preserve it; do not replace the setting. In particular, do **not** remove AudioReactive or any other usermods already listed. See `examples/platformio_override.example.ini` for the same add-only instructions.
-
-### Build
-
-From the WLED project root, substitute the name of the PlatformIO environment you intend to compile:
+If your environment already lists other usermods, **append** the `symlink://...` entry instead of replacing the existing list. An absolute path can be provided with `symlink:///absolute/path/to/wled-usermod-gpt-matrix-fx`. Build from the WLED checkout:
 
 ```sh
-cd /path/to/WLED
-pio run -e YOUR_WLED_ENV
+pio run -e YOUR_ENVIRONMENT
 ```
 
-If you are already in the WLED project root, only the `pio run` line is necessary. `YOUR_WLED_ENV` is a placeholder, not a literal environment name.
+Configure WLED's 2D matrix and segment to match your physical panel. For GPTA01–GPTA10, configure the AudioReactive usermod and audio input separately. No other core modifications are needed **unless** your particular WLED build runs out of effect IDs, as described below.
 
-After flashing, use the WLED effect selector. Names sort lexicographically as `GPT01` ... `GPT20`, followed by `GPTA01` ... `GPTA05`. Effect IDs are dynamically allocated by WLED (`strip.addEffect(255, ...)`) and may change between firmware builds. Verify `/json/eff` and update any saved mode IDs or external automations after installation or removal of effects.
+## Effect ID limit: missing effects in WLED
 
-**Effect-count caution:** WLED uses a limited effect-ID space; adding 25 modes may approach that limit if a build already includes a large number of custom effects. Check that all 25 entries appear in your effect list after compilation and flashing.
+**Symptom:** One or more GPT effects—often those registered last—are missing from the effects menu even though compilation succeeds.
 
-## GPT06 — Clockwork Cathedral (moving epicyclic mechanism)
+### Why this happens
 
-GPT06 now has **three simultaneous motions**:
+WLED's current effect-registration paths use **8-bit effect IDs**, with **255 reserved** as the special argument to `strip.addEffect(255, ...)` for automatic registration. A highly customized firmware with many built-in and usermod effects can exhaust the available IDs. **Hiding an effect from the interface does not free its registration slot.** Do not rely only on the `fxcount` number to determine whether there is room: reserved (`RSVD`) slots can be reused while remaining in the effect table.
 
-1. **Gear spin:** the 14-tooth center gear retains the previous v0.2.1 speed curve and can approach one revolution per second at maximum WLED Speed.
-2. **Planetary revolution:** the two 10-tooth satellites orbit the center on opposite ends of a common carrier, with a pitch-center separation of `0.385 + 0.275` normalized units. The planet gears rotate according to `ωplanet = (1 + 14/10) × ωcarrier − (14/10) × ωsun`, rather than independently. This keeps a tooth opposite a gap at both contacts even as the carrier turns.
-3. **Assembly drift:** the entire mechanism follows a gentle, dual-frequency 2D trajectory, with a small scale-breathing component. This prevents the central axis from appearing fixed to the screen and keeps the assembly within a typical 64×64 view.
+### Recommended solution for a custom WLED fork
 
-The two satellites are meshed with the central gear, not with each other. Gear radii are proportional to tooth counts (14:10), and the half-tooth offset ensures compatible contact phases. To avoid cumulative errors, the phase of each rotating component is derived directly from the device timestamp in double precision before being reduced to one revolution. This also avoids jumps when the central angle wraps at 2π.
+1. **Back up the fork and export WLED presets** before altering registrations.
+2. Apply the separate **WLED FX Registration Filter** patch to the *matching revision* of your fork's `wled00/FX.cpp`. The patch is not part of stock WLED or of this standalone usermod.
+3. Place its `wled_fx_exclusions.h` next to `FX.cpp`. In that file select *unused built-in modes* to leave unregistered, preserving the mode implementation and original ID positions.
+4. Append `-D WLED_FX_CUSTOM_FILTER` to the **existing** `build_flags` for your PlatformIO environment. **This macro has no effect unless the matching core patch is installed.**
+5. Each excluded `FX_MODE_...` must appear only **once** in the filter's `switch`: duplicates cause the C++ compile error `duplicate case value`.
+6. Rebuild, flash, and verify that **all 40 GPT Matrix FX names** appear in WLED's `/json/eff` list; check `u.gptMatrixFX` in `/json/info` for the module version.
+7. **Check saved presets and automations.** Built-in effect IDs are retained, but dynamically assigned usermod IDs can shift when the available slots or registration order change. A preset using an old numeric FX ID can end up selecting a different effect.
 
-The existing tooth shapes, metallic body, perforations, moving spokes, rotating rim pins and surface glitter remain. Their geometry is transformed with the gears, so ornamental details move along with the mechanism instead of staying painted to screen coordinates.
+The exclusion filter is **registration-only**: it does not delete built-in algorithms or necessarily reduce firmware binary size. Restore the original `FX.cpp` / remove the macro to revert. Do not disable WLED's 2D subsystem on a HUB75 build. Removing unwanted optional effect-producing usermods is another way to recover slots.
 
-**Controls:** WLED **Speed** sets the central spin and influences orbital-carrier speed; **Intensity** controls metallic highlights; **Custom 1** adjusts tooth depth; **Custom 2** adjusts color. No new controls or stored segment settings are required. The effect retains its name and its original `GPT06` registration position.
+**Important:** Do not blindly copy a modified `FX.cpp` from another WLED revision. The filter must be adapted to your branch. The example filter is distributed separately from this library; consult the project's release assets or your own fork-specific patch.
 
-**Performance:** the nominal GPT06 frame interval remains 22 ms. The effect uses no additional segment memory, but its trigonometric per-pixel renderer can still be limited by ESP32-S3 workload or HUB75 refresh throughput. This is a stylized geometric model, not a CAD-level involute/contact-force simulation.
+## Parameters and diagnostics
 
-## AudioReactive contract
+Each effect exposes WLED's standard controls (such as Speed and Intensity) plus effect-specific controls where applicable. Some visual styles are palette-sensitive; check colors and animations on the real device.
 
-The five audio effects read from the running WLED AudioReactive usermod via `UsermodManager::getUMData(..., USERMOD_ID_AUDIOREACTIVE)`; they do not create audio interfaces or configure I2S.
+`/json/info` exposes data under `u.gptMatrixFX`, including `version`, `build`, `effects`, `standard`, `audio`, `experimental`, and performance diagnostics. The module contributes diagnostics without replacing other usermod fields. The WLED global `leds.fps` reflects the full WLED/display pipeline, not only the cost of the selected effect renderer.
 
-- FFT data: the normal 16-band `fftResult` array at the usermod's published data pointer.
-- Smoothed volume and sample-peak flag are also used by appropriate effects.
-- Every effect maintains a small **per-segment** attack/release smoothing state (approximately 24 bytes), and falls back to subdued rendering when audio is not available.
-- The external AudioReactive usermod must already be built, enabled, and supplied with sound for real audio responsiveness.
-- Input values are sanitized before use, including non-finite volume values.
+## Release package
 
-## Size, memory, performance, and limitations
+This distribution contains only the WLED usermod source files, library metadata, installation example, license, README and release notes. Development diagnostics, tests, simulated visuals, and generated previews are not included.
 
-- All effects draw through `SEGMENT.setPixelColorXY()` and scale to the current 2D segment dimensions. They are designed visually around 64×64, but host-tested on 8×8, 16×32, 64×64, 96×48 and 128×128. Fine details can disappear on tiny matrices.
-- Non-2D segments safely render the configured fallback color.
-- GPT04 maintains two simulation buffers. Its logical grid is capped at 64×64, requiring at most **8,192 bytes** of per-segment effect memory; larger matrices scale the simulation.
-- Other standalone effects use procedural drawing without allocating extra per-effect buffers. Audio modes each allocate the approximately 24-byte smoothing state.
-- Effects have different frame-rate throttles between about 22 ms and 47 ms, but **host timings are not hardware FPS estimates**. Some procedural modes use significant per-pixel trigonometry and should be profiled on the real ESP32-S3.
-- Palette transitions, brightness, 2D segment arrangement and matrix output are handled by WLED. Each GPT effect samples the selected palette through WLED; the WLED Default palette is deliberately requested as a real gradient (`mcol=255`) instead of substituting the segment primary color.
-- If a selected palette is completely black (including a Primary Color palette configured with a black primary), GPT Matrix FX applies a temporary rainbow fallback so the procedural effect remains visible. Black *entries within a non-black palette* remain black. The fallback changes only the rendered result, not the configured WLED palette or primary color. The fallback check adds up to 16 palette lookups per effect invocation; no persistent extra segment buffers are allocated.
-- The maintainer has reported that the effects run successfully on a real 64×64 matrix. This packaged source was **not** independently built or flashed against the maintainer's custom WLED checkout in the host-test environment; a local WLED firmware build and on-device acceptance remain necessary for other installations.
+The release was built and tested by the project maintainer on the Waveshare environment. Frame rates and stability may vary on other WLED forks and hardware.
 
-## Test commands
+## License
 
-From the package directory:
-
-```sh
-./tests/run_host_tests.sh
-./tests/run_sanitizers.sh
-```
-
-These compile and execute the **real C++ effects source** with a minimal host WLED API double. Checks cover effect naming and count; all 25 effects over five resolutions; all 25 effects across nine palette changes with a black-primary regression and dark-entry preservation; frame changes over time; the epicyclic gear mesh, spatial movement and long-uptime phase stability; sound disabled or incomplete; non-finite audio volume; missing matrix support; and a differential audio test for every audio effect. The host double intentionally defines Arduino's `sq(x)` macro to detect accidental helper-name collisions. C++11 compilation, AddressSanitizer and UndefinedBehaviorSanitizer are included.
-
-## Files
-
-- `gpt_matrix_fx.cpp`: all effect implementations and dynamic WLED registration.
-- `library.json`: PlatformIO local-library definition (`libArchive: false`).
-- `examples/platformio_override.example.ini`: add-only integration options.
-- `tests/`: runnable host compile, regression and sanitizer tests, excluded from firmware compilation.
-- `TEST_REPORT.md`: verification record and known limitations.
-- `RELEASE_NOTES.md`: release highlights and GitHub release notes.
-- `LICENSE`: MIT.
-
-## v0.2.2 change summary
-
-- GPT06 has two orbiting planet gears and a smooth, floating whole-assembly translation with subtle scale variation.
-- Maintained physical pitch-center distances and tooth-to-gap engagement throughout the carrier revolution. Planet spin is derived from carrier motion and center spin.
-- Retained tooth geometry, metallic spokes, enamel glitter, custom color, existing speed range, and palette behavior.
-- Added numerical/visual regression tests for orbital geometry, mesh phase, viewport bounds, and visible travel at five speed levels and eleven timestamps, including near-millis-wrap uptime.
-- No changes to the other 24 effects, palette handling, AudioReactive data plumbing, or effect registration order.
-
-## v0.2.1 change summary
-
-- Fixed palette 0 (Default) rendering: WLED can return the primary segment color, potentially black, when `color_from_palette()` receives `mcol=0`. GPT now passes `mcol=255` and requests moving/wrapped palette interpolation, keeping the selected palette active.
-- Added an all-black palette safety fallback, without modifying non-black palette slots or the segment settings.
-- Added an in-place nine-state palette-change regression for every one of the 25 effects. The test reproduces a blackout with the v0.2.0 source and passes with v0.2.1.
-- No intentional changes to procedural geometry, effect names, registration order, or AudioReactive processing.
-
-## v0.2.0 change summary
-
-- Preserved GPT01–GPT05 and GPT07–GPT08 visuals from v0.1.1.
-- Rebuilt GPT06 with kinematically consistent gearing, faster speed and ornamental metal/glitter detailing.
-- Added twelve standalone effects (GPT09–GPT20).
-- Renamed former GPT9 and GPT10 to GPTA01 and GPTA02 while preserving their visuals.
-- Added three new AudioReactive effects (GPTA03–GPTA05).
-- Switched all user-facing effect names to sortable, zero-padded `GPT## - Name` and `GPTA## - Name` forms.
-- Updated host test coverage to 25 effects, and kept all packaged materials in English.
-
-## Repository hygiene
-
-The project `.gitignore` excludes PlatformIO/IDE outputs and Windows `Zone.Identifier` Mark-of-the-Web sidecar files, including `filename:Zone.Identifier` and `filename:Zone.Identifier:$DATA`. Existing tracked files are not automatically untracked when an ignore rule is added.
+See [LICENSE](LICENSE) for the repository license. External components such as WLED and AudioReactive retain their respective licenses.

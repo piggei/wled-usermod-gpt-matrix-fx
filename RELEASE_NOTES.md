@@ -1,39 +1,33 @@
-# GPT Matrix FX v0.2.2
+# GPT Matrix FX — Release notes
 
-First public source release of **GPT Matrix FX**, an external PlatformIO usermod providing **25 original effects for WLED 2D LED matrices**.
+## v0.3.0 — Final release
 
-All effects, source code, automated tests, and documentation were designed and produced by **ChatGPT (OpenAI)**. The repository maintainer supplied the brief, feedback, hardware evaluation, and release publishing. This is an independent project, not an official OpenAI or WLED release.
+**40 effects**: 30 standard (`GPT01`–`GPT30`) and 10 AudioReactive (`GPTA01`–`GPTA10`), all with final names.
 
-## Highlights
+- Promotes the approved RC4 to the v0.3.0 release: no changes to rendering algorithms, effect order, palette behavior, or AudioReactive processing.
+- Keeps overlapping audio-triggered rings in GPTA05, with distracting concentric rings removed from GPTA02 and GPTA07.
+- Keeps the default `/json/info` payload concise (`version`, `build`, `effects`, `standard`, `audio`); the existing diagnostic code and counters remain available with `GPTFX_ENABLE_JSON_DIAGNOSTICS=1`.
+- README provides the YouTube demonstration, complete tables of effects, 64×64 recommendation (16×16 not recommended), and WLED effect-ID / `RSVD` slot guidance.
+- Release package contains only the eight public files. No development CSV, tests, simulated previews or visual assets.
+- Tested on a 64×64 Waveshare ESP32-S3 / HUB75 configuration during development. This does not imply qualification for all hardware, WLED versions or long-running deployments.
 
-- **20 standalone effects**, named `GPT01` through `GPT20`.
-- **5 AudioReactive effects**, named `GPTA01` through `GPTA05`, using the WLED AudioReactive usermod's 16 FFT bands.
-- A redesigned **GPT06 - Clockwork Cathedral** with gear-meshed orbiting satellites, drifting assembly motion, moving metallic details, and glitter.
-- Palette-change handling and fallback for entirely black palettes, without erasing intentional dark regions in non-black palettes.
-- Scales from small to larger 2D segments; tuned visually around a 64x64 HUB75 display.
-- External symlink-based PlatformIO integration; no WLED core modifications.
+## v0.3.0-rc.4
 
-## Installation
+- Made JSON diagnostics opt-in at build time, preserving instrumentation and the rendering code.
+- Distribution remained limited to eight public files.
 
-Unpack `wled-usermod-gpt-matrix-fx` alongside your WLED checkout. Append the following entry to your existing `custom_usermods` in the selected PlatformIO environment (preserving all other entries):
+## v0.3.0-rc.3
 
-```ini
-  symlink://../wled-usermod-gpt-matrix-fx
-```
+Release candidate with **40 effects**: 30 standard (`GPT01`–`GPT30`) and 10 AudioReactive (`GPTA01`–`GPTA10`). All effect names are final, without beta suffixes.
 
-Alternatively, use an absolute `symlink:///absolute/path/to/wled-usermod-gpt-matrix-fx` path, replacing the placeholder with your actual filesystem location. Compile from the WLED project root with `pio run -e YOUR_WLED_ENV`, replacing `YOUR_WLED_ENV` with the selected PlatformIO environment name. See `README.md` for details. Include and enable the existing WLED AudioReactive usermod for the five sound-responsive effects.
+- Rendering behavior is frozen from `dev.16-preview.7b`: no formula, palette, effect order, or animation change in RC3.
+- Audio details include independent fading beat waves for GPTA05 and removal of distracting concentric rings from GPTA02 and GPTA07.
+- The distribution contains a GitHub-ready effect catalog in table form, the official YouTube video directly below the title, 64×64 guidance, and an explanation of WLED's effect-ID/`RSVD` slot limits.
+- Excluded all development-only documents, host tests, diagnostics, CSV data, visual assets, and generated previews from the release archive.
+- RC3 packaging update documents that `rsync -a` retains stale files and legacy install scripts must not unconditionally run excluded development tests.
+- RC3 updates source build metadata and PlatformIO library metadata only. Cleaned distribution is intentionally limited to eight public files; removing previously tracked development artifacts from the GitHub branch requires a separate Git commit.
+- Host smoke tests were completed during development (test harness not distributed). Full Kagayaki PlatformIO compilation, all-40-effect registration and long-duration hardware qualification remain necessary before final v0.3.0 promotion.
 
-## Validation
+## v0.2.2
 
-- Host suite: 25 effects x 5 matrix resolutions; 25 effects x 9 live palette configurations.
-- Differential FFT tests for all five audio modes.
-- GPT06 meshing/orbital-motion geometry tests.
-- C++11 compatibility checks and AddressSanitizer/UndefinedBehaviorSanitizer passed.
-- The maintainer reports satisfactory results on the real LED matrix. This package has not been independently compiled against the maintainer's custom WLED checkout; hardware FPS/soak tests have not been formally measured.
-
-## Notes
-
-- Effect IDs are dynamically allocated by WLED and can change when the effect set is rebuilt. Presets referencing numeric IDs may need review.
-- The package includes an updated `.gitignore` that excludes `Zone.Identifier` filesystem artifacts (including Windows/WSL Mark-of-the-Web sidecars).
-- The firmware environment is **not** bundled: this is a WLED usermod source library, not a prebuilt firmware image.
-- License: MIT.
+Earlier public release with 25 effects (20 standard, 5 AudioReactive). The v0.3.0 series adds 15 effects and improves rendering performance and long-uptime phase handling.
