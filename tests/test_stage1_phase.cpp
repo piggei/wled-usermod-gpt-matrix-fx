@@ -124,7 +124,7 @@ int main(int argc,char**argv){
   std::map<std::string,std::string> fields;
   JsonObject root{&fields,""};
   globalMod->addToJsonInfo(root);
-  if(fields.at("u.gptMatrixFX.build")!="dev.16-preview.4a" ||
+  if(fields.at("u.gptMatrixFX.build")!="dev.16-preview.7b" ||
      fields.at("u.gptMatrixFX.trigonometry.stage1PhaseBounding") != (GPTFX_STAGE1_PHASE_BOUNDING ? "1" : "0") ||
      fields.at("u.gptMatrixFX.extraPerformance.effect") != "GPTA05") {
     std::fprintf(stderr,"STAGE1_JSON_FAIL\n");failed=true;

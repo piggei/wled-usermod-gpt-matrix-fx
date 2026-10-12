@@ -1,14 +1,45 @@
-# GPT Matrix FX - Sparse Ripple Experiment
+# GPT Matrix FX — WLED 2D matrix effects
 
-Experimental **v0.3.0-dev.14a** continuation of the stable **v0.2.2** release. This package includes all 25 original effects plus five beta visual candidates. **Do not publish this package as v0.2.2.**
+**Current development snapshot:** `v0.3.0-dev.16-preview.7b` (experimental; not the final v0.3.0 release).  
+**40 effects:** `GPT01`–`GPT30` (30 standard) and `GPTA01`–`GPTA10b` (10 AudioReactive).  
+**Hardware target:** WLED on ESP32-S3 with a 2D matrix, especially a 64×64 HUB75 panel.  
+**Last stable release:** v0.2.2 with 25 effects; keep the stable release separate from this development snapshot.
 
-- GPT21b - Sparse Ripple Brightness
-- GPT22b - Sparse Ripple Size
-- GPT23b - Photon Loom
-- GPT24b - Kinetic Rosettes
-- GPT25b - Tidal Glyphs
+`GPT21`–`GPT30` have graduated from beta without changes to their accepted renderer algorithms. The five newest AudioReactive modes are still marked beta in the effect selector: `GPTA06b` Pulse Architecture, `GPTA07b` Harmonic Constellations, `GPTA08b` Spectral Vortex, `GPTA09b` **Spectral Ribbons**, and `GPTA10b` Resonance Cathedral. They retain the beta suffix in this snapshot; a final release requires explicit promotion and validation. The file [DEV16_PREVIEW7_NOTES.md](DEV16_PREVIEW7_NOTES.md) describes the current audio full-scale qualification.
 
-See [EXPERIMENTAL_SPARSE_RIPPLE.md](EXPERIMENTAL_SPARSE_RIPPLE.md) for testing and attribution.
+This is an **external PlatformIO usermod**. Its effect registration uses `strip.addEffect(255, ...)`; no core WLED patch is required *by this library*. A WLED build already near its effect-ID limit may need a separate core-side registration filter, described below. Host tests and RGB simulator outputs do not replace firmware compilation and real hardware verification.
+
+## Effect ID limit, missing effects, and reserved slots
+
+**Symptom:** The final GPT effect is missing from the WLED effect list, or custom-effect registration stops working even though the firmware builds. A highly customized WLED build can exhaust the available effect IDs. Do not assume that a successful build guarantees that every effect is registered.
+
+**Why:** Current WLED effect registration and related interfaces have an 8-bit effect-ID constraint. `255` is a special value used by `strip.addEffect(255, ...)` to request automatic assignment; it is **not** a normal extra user-effect slot. Dynamic registration is therefore constrained by the available ID slots, not merely by the number of effect functions in source code. Simply changing `fxcount` or hiding menu entries does not solve the problem. Exact allocation behavior can vary with the WLED fork and its other usermods.
+
+**Preferred workaround for customized forks:** Exclude unused *built-in effect registrations* while leaving their renderer implementations untouched, so their original IDs can remain reserved (`RSVD`) and be reused by dynamically registered usermod effects.
+
+1. **Back up** the WLED fork and export any presets / automations that reference effect IDs.
+2. In the WLED checkout's `wled00/FX.cpp`, apply the optional **WLED FX Registration Filter** patch compatible with that exact core revision. This patch is maintained separately from GPT Matrix FX, because changing core registration is not the responsibility of this usermod. It uses an adjacent `wled00/wled_fx_exclusions.h` file to define which built-in effect IDs are excluded. **Do not blindly replace `FX.cpp` from a different WLED revision.**
+3. Under your existing PlatformIO environment (e.g. `[env:waveshare]`), **append** `-D WLED_FX_CUSTOM_FILTER` to its existing `build_flags`, preserving the other flags. The macro works **only after applying the matching FX.cpp patch**; stock WLED does not implement it by itself.
+4. Edit the `case FX_MODE_...: return false;` entries in `wled_fx_exclusions.h` to exclude only modes you do not use. **Every `case` must appear once**; duplicated cases cause a compiler `duplicate case value` error. This is a registration-only filter and does **not** remove renderer code or guarantee any firmware-size savings.
+5. Rebuild, flash, verify that **all 40 GPT effects** appear in `/json/eff`, and check `/json/info` for the reported GPT Matrix FX build and effect count. `fxcount` does **not necessarily decrease** when slots are excluded: the reserved positions can remain in the effect vector.
+6. Check old presets after every change to the exclusions list: **built-in IDs remain in place, but auto-assigned GPT/user effect IDs can change**, so previously saved preset IDs may select a different effect. Update affected presets/automations as necessary.
+
+**Alternative:** Remove other optional usermod effect packs from your own firmware configuration if you do not need them. Avoid disabling WLED's 2D matrix infrastructure (`WLED_DISABLE_2D`) on a 2D/HUB75 configuration. Do not remove effects manually from the body of `FX.cpp` just to recover slots.
+
+**Reverting the filter:** Remove its macro/build flag or restore the unmodified `FX.cpp` (and rebuild). GPT Matrix FX itself does not require this customization on WLED builds that have enough free slots.
+
+## Current effect catalog (v0.3.0-dev.16-preview.7b)
+
+**Additional standard effects:** `GPT21` Sparse Ripple Brightness; `GPT22` Sparse Ripple Size; `GPT23` Photon Loom; `GPT24` Kinetic Rosettes; `GPT25` Tidal Glyphs; `GPT26` Iridescent Membranes; `GPT27` Crystal Recursion; `GPT28` Luminous Mycelium; `GPT29` Prismatic Comets; `GPT30` Moiré Engine.
+
+**Additional AudioReactive effects:** `GPTA06b` Pulse Architecture; `GPTA07b` Harmonic Constellations; `GPTA08b` Spectral Vortex; `GPTA09b` Spectral Ribbons; `GPTA10b` Resonance Cathedral. The five earlier `GPTA01`–`GPTA04` are unchanged. GPTA05 Synaptic Reef now launches independent, overlapping beat ripples rather than restarting a single ring. GPTA02 and GPTA07b no longer display the beat-triggered full-screen rings.
+
+See [EXPERIMENTAL_SPARSE_RIPPLE.md](EXPERIMENTAL_SPARSE_RIPPLE.md) for the historical beta development and attribution of GPT21–GPT25.
+
+---
+
+## Historical development notes (dev.14a and later)
+
 
 ## Current dev.14a GPT10 correction
 

@@ -1,6 +1,6 @@
 /*
- * GPT Matrix FX - 35 WLED 2D effects (c) 2026.
- * Version: 0.3.0-dev.16-preview.4a (20 standard + 5 audio + 10 experimental).
+ * GPT Matrix FX - 40 WLED 2D effects (c) 2026.
+ * Version: 0.3.0-dev.16-preview.7b (30 standard + 10 audio; 5 experimental audio).
  * License: MIT. Designed for WLED 0.15+ / modern WLED usermod FX API.
  * No WLED core edits, no display buffers outside WLED's segment storage.
  * The number on the effect name is a stable human label, not a WLED mode ID.
@@ -13,7 +13,7 @@
 
 namespace gptfx {
 constexpr const char* GPTFX_VERSION = "0.3.0";
-constexpr const char* GPTFX_BUILD = "dev.16-preview.4a";
+constexpr const char* GPTFX_BUILD = "dev.16-preview.7b";
 constexpr float K_PI = 3.14159265358979323846f;
 constexpr float K_TAU = 6.28318530717958647692f;
 
@@ -24,7 +24,7 @@ static inline float clip(float v, float lo = 0.0f, float hi = 1.0f) {
 }
 static inline float squaref(float v) { return v * v; }
 static inline float frac(float v) { return v - floorf(v); }
-// Experimental second-stage LUT. GPT24b remains independently controlled.
+// Experimental second-stage LUT. GPT24 remains independently controlled.
 // 0: frozen dev.10 libm; 2: interpolated shared 1024-entry LUT.
 #ifndef GPTFX_EXTRA_TRIG_BACKEND
 #define GPTFX_EXTRA_TRIG_BACKEND 2
@@ -57,7 +57,7 @@ static inline float extraCosine(float x) {
 #endif
 // Reduce a periodic phase without a potentially expensive reduction inside
 // the pixel loop. The centered interval also minimizes floating-point drift.
-// Stage-1 phase bounding for GPT05, GPT11, GPT13, GPT19, GPT23b, GPTA05.
+// Stage-1 phase bounding for GPT05, GPT11, GPT13, GPT19, GPT23, GPTA05.
 // This gate preserves original expressions and native libm when disabled.
 // Keep temporal reductions outside the loops and never wrap hue, frac, noise
 // seeds, spatial geometry, or the entire phase before frequency multiplication.
@@ -228,7 +228,7 @@ static inline bool ready() {
   }
   return true;
 }
-// Diagnostic counters only for GPT24b. No per-pixel instrumentation.
+// Diagnostic counters only for GPT24. No per-pixel instrumentation.
 // Updated by the WLED effects task; JSON reads are diagnostic snapshots.
 struct GPT24Perf {
   static constexpr uint8_t RECENT_COUNT = 32;
@@ -253,7 +253,7 @@ struct GPT24Perf {
   int8_t coreStart = -1;
   int8_t coreEnd = -1;
   uint32_t coreChanges = 0;
-  // Last GPT24b render: maximum magnitude of the five temporal inputs
+  // Last GPT24 render: maximum magnitude of the five temporal inputs
   // before/after wrapping (radians; not including pixel-dependent angles).
   float phaseRawAbs = 0.0f;
   float phaseWrappedAbs = 0.0f;
@@ -267,7 +267,7 @@ static inline int8_t currentCore() {
 }
 static GPT24Perf gpt24Perf;
 // One-time microbenchmark: sampled at setup, never inside the hot pixel loop.
-// Samples both negative and positive bounded angles representative of GPT24b.
+// Samples both negative and positive bounded angles representative of GPT24.
 // Long-phase native libm is measured separately to expose costly reduction.
 struct GPTTrigBenchmark {
   uint32_t nativeSmallNs = 0;
@@ -1097,7 +1097,7 @@ static void mode_gpt20() {
     SEGMENT.setPixelColorXY(x,y,chroma(sum*42.0f+product*145.0f+t*10.0f+SEGMENT.custom2*.55f,lum));
   }
 }
-// Experimental GPT21b/GPT22b: sparse, distance-phased ripple on an adaptive dot lattice.
+// Experimental GPT21/GPT22: sparse, distance-phased ripple on an adaptive dot lattice.
 // No full-frame allocation; black space between cells is intentional.
 // Shared temporal and radial wave, with two different light representations.
 static void mode_sparse_ripple(bool variableSize) {
@@ -1148,11 +1148,11 @@ static void mode_sparse_ripple(bool variableSize) {
 }
 static void mode_gpt21() { mode_sparse_ripple(false); }
 static void mode_gpt22() { mode_sparse_ripple(true); }
-static const char m21[] PROGMEM="GPT21b - Sparse Ripple Brightness@Wave Speed,Contrast,Dot Spacing,Color;!,!;!;2;sx=135,ix=205,c1=128";
-static const char m22[] PROGMEM="GPT22b - Sparse Ripple Size@Wave Speed,Expansion,Dot Spacing,Color;!,!;!;2;sx=135,ix=205,c1=128";
+static const char m21[] PROGMEM="GPT21 - Sparse Ripple Brightness@Wave Speed,Contrast,Dot Spacing,Color;!,!;!;2;sx=135,ix=205,c1=128";
+static const char m22[] PROGMEM="GPT22 - Sparse Ripple Size@Wave Speed,Expansion,Dot Spacing,Color;!,!;!;2;sx=135,ix=205,c1=128";
 
 
-// GPT23b: crossed light fibers with traveling, independently phase-shifted pulses.
+// GPT23: crossed light fibers with traveling, independently phase-shifted pulses.
 // Sparse luminous threads alternate over/under at every crossing.
 static void mode_gpt23() {
   if (!ready() || !tick(32)) return;
@@ -1181,9 +1181,9 @@ static void mode_gpt23() {
     SEGMENT.setPixelColorXY(x,y,chroma(18.0f*ix+29.0f*iy+t*12.0f+SEGMENT.custom2*.35f,lum));
   }
 }
-static const char m23[] PROGMEM="GPT23b - Photon Loom@Pulse Speed,Glow,Thread Density,Hue;!,!;!;2;sx=145,ix=190";
+static const char m23[] PROGMEM="GPT23 - Photon Loom@Pulse Speed,Glow,Thread Density,Hue;!,!;!;2;sx=145,ix=190";
 
-// GPT24b: layered hypotrochoid-like luminous traces, moving in opposite directions.
+// GPT24: layered hypotrochoid-like luminous traces, moving in opposite directions.
 // Uses distance to parametric orbit samples, not a precomputed image or frame buffer.
 // Algebraic common-subexpression elimination: each pixel has one polar angle
 // and one radius, reused by both rosettes, core glow and palette mapping.
@@ -1285,9 +1285,9 @@ static void mode_gpt24_profiled() {
     gpt24Perf.height = SEG_H;
   }
 }
-static const char m24[] PROGMEM="GPT24b - Kinetic Rosettes@Orbit Speed,Trace Glow,Petals,Size;!,!;!;2;sx=135,ix=190,c2=128";
+static const char m24[] PROGMEM="GPT24 - Kinetic Rosettes@Orbit Speed,Trace Glow,Petals,Size;!,!;!;2;sx=135,ix=190,c2=128";
 
-// GPT25b: an array of individual glyphs bending in a traveling tidal field.
+// GPT25: an array of individual glyphs bending in a traveling tidal field.
 // Alternating open arcs and square corners preserve negative space between cells.
 static void mode_gpt25() {
   if (!ready() || !tick(35)) return;
@@ -1318,9 +1318,9 @@ static void mode_gpt25() {
     SEGMENT.setPixelColorXY(x,y,chroma(ix*24.0f+iy*13.0f+t*9.0f+SEGMENT.custom2*.4f,lum));
   }
 }
-static const char m25[] PROGMEM="GPT25b - Tidal Glyphs@Tide Speed,Brightness,Grid Density,Hue;!,!;!;2;sx=125,ix=195";
+static const char m25[] PROGMEM="GPT25 - Tidal Glyphs@Tide Speed,Brightness,Grid Density,Hue;!,!;!;2;sx=125,ix=195";
 
-// GPT26b - Iridescent Membranes (isolated visual prototype).
+// GPT26 - Iridescent Membranes (isolated visual prototype).
 // A flowing thin-film field: a low-frequency warped cellular membrane,
 // multiple colored interference bands and sparse bright boundary highlights.
 // All time-driven trig arguments are bounded once/frame, not per pixel.
@@ -1357,11 +1357,11 @@ static void mode_gpt26() {
     SEGMENT.setPixelColorXY(x,y,chroma(105.0f+58.0f*field+30.0f*depth+76.0f*wx-64.0f*wy+chromatic+fmodf(t*(.17f*12.0f),256.0f),lum));
   }
 }
-static const char m26[] PROGMEM="GPT26b - Iridescent Membranes@Flow,Glow,Film Scale,Hue;!,!;!;2;sx=125,ix=185,c1=135,c2=128";
+static const char m26[] PROGMEM="GPT26 - Iridescent Membranes@Flow,Glow,Film Scale,Hue;!,!;!;2;sx=125,ix=185,c1=135,c2=128";
 
 
 
-// GPT27b - Crystal Recursion. Nested triangular crystal facets, sharp
+// GPT27 - Crystal Recursion. Nested triangular crystal facets, sharp
 // refractive ridges and tiny sparks. No framebuffer or heap allocations.
 static void mode_gpt27(){
   if(!ready() || !tick(31))return;
@@ -1389,9 +1389,9 @@ static void mode_gpt27(){
     SEGMENT.setPixelColorXY(x,y,chroma(hue,lum*(.52f+.48f*d)));
   }
 }
-static const char m27[] PROGMEM="GPT27b - Crystal Recursion@Rotation,Brilliance,Crystal Layers,Color;!,!;!;2;sx=115,ix=190,c1=150,c2=120";
+static const char m27[] PROGMEM="GPT27 - Crystal Recursion@Rotation,Brilliance,Crystal Layers,Color;!,!;!;2;sx=115,ix=190,c1=150,c2=120";
 
-// GPT28b: Luminous Mycelium, row-wise segment rasterization.
+// GPT28: Luminous Mycelium, row-wise segment rasterization.
 // Distances and brightness retain the preview.3 formula. Precompute all
 // segment geometry, then rasterize only each segment's bounding rectangle.
 // Fixed row scratch (max 64 px per chunk); no heap/PSRAM allocation.
@@ -1487,9 +1487,9 @@ static void mode_gpt28(){
     }
   }
 }
-static const char m28[] PROGMEM="GPT28b - Luminous Mycelium@Growth,Glow,Branch Count,Color;!,!;!;2;sx=130,ix=205,c1=155,c2=110";
+static const char m28[] PROGMEM="GPT28 - Luminous Mycelium@Growth,Glow,Branch Count,Color;!,!;!;2;sx=130,ix=205,c1=155,c2=110";
 
-// GPT29b - Prismatic Comets. A completely different visual design from
+// GPT29 - Prismatic Comets. A completely different visual design from
 // Strange Attractor: sweeping comet heads with long chromatic curving tails.
 // Five paths, evaluated analytically per pixel: O(5 * pixels), no history.
 static void mode_gpt29(){
@@ -1538,9 +1538,9 @@ static void mode_gpt29(){
     SEGMENT.setPixelColorXY(x,y,chroma(hue,clip(lum*(.67f+.33f*d))));
   }
 }
-static const char m29[] PROGMEM="GPT29b - Prismatic Comets@Orbit Speed,Brightness,Tail Width,Hue;!,!;!;2;sx=125,ix=220,c1=125,c2=120";
+static const char m29[] PROGMEM="GPT29 - Prismatic Comets@Orbit Speed,Brightness,Tail Width,Hue;!,!;!;2;sx=125,ix=220,c1=125,c2=120";
 
-// GPT30b - Moire Engine. Superposed drifting rotated fine gratings generate
+// GPT30 - Moire Engine. Superposed drifting rotated fine gratings generate
 // large interference envelopes and localized iridescent maxima.
 static void mode_gpt30(){
   if(!ready() || !tick(30))return;
@@ -1565,7 +1565,7 @@ static void mode_gpt30(){
     SEGMENT.setPixelColorXY(x,y,chroma(hue,clip(bright)));
   }
 }
-static const char m30[] PROGMEM="GPT30b - Moire Engine@Drift,Intensity,Interference Density,Hue;!,!;!;2;sx=120,ix=195,c1=130,c2=125";
+static const char m30[] PROGMEM="GPT30 - Moire Engine@Drift,Intensity,Interference Density,Hue;!,!;!;2;sx=120,ix=195,c1=130,c2=125";
 
 static const char m20[] PROGMEM="GPT20 - Zenith Quasicrystal@Drift,Brilliance,Axes,Color;!,!;!;2;sx=115,ix=170";
 
@@ -1633,7 +1633,7 @@ static void mode_audio1() {
 }
 static const char ma1[] PROGMEM = "GPTA01 - Bass Cartographer@Drift,Contour,Isolines,Color;!,!;!;2v;sx=105,ix=175,c1=150,si=0";
 
-// GPTA02: Harmonic energy drives 16 portals, beat detection adds a light shockwave.
+// GPTA02: Harmonic energy drives 16 portals; no beat-triggered full-screen ring.
 static void mode_audio2() {
   if(!ready() || !tick(35))return;
   if(!SEGENV.allocateData(sizeof(AudioState))){SEGMENT.fill(SEGCOLOR(0));return;}
@@ -1641,9 +1641,6 @@ static void mode_audio2() {
   if(SEGENV.call==0) memset(&state,0,sizeof(state));
   bool connected=sampleAudio(state);
   int w=SEG_W,h=SEG_H;float u=unitOf(w,h),t=timePhase(.52f),d=detail();
-  float pulse=0.0f;
-  if(state.lastPulse && (uint32_t)(strip.now-state.lastPulse)<1400U)
-    pulse=1.0f-(float)(strip.now-state.lastPulse)/1400.0f;
 #if GPTFX_STAGE2B_PHASE_BOUNDING
   const float raw[2]={-t*1.6f,t};
   const float phaseBound[2]={stage2BoundPhase(raw[0]),stage2BoundPhase(raw[1])};
@@ -1660,8 +1657,7 @@ static void mode_audio2() {
     float phase=13.0f*r+8.0f*a + bend + GPTFX_STAGE2B_ARG(-t*1.6f,phaseBound[0]);
     float arcs=ridge(phase)+.45f*ridge(24.0f*r-2.5f*bend+GPTFX_STAGE2B_ARG(t,phaseBound[1]));
     float portal=1.0f-smooth(.016f,.09f,fabsf(r-(.18f+.19f*tune1()+.62f*e)));
-    float shock= pulse*(1.0f-smooth(.025f,.09f,fabsf(r-(1.0f-pulse)*1.7f)));
-    float lum=.018f+(.10f+.62f*e)*arcs+portal*(.18f+.47f*e)+shock*.9f;
+    float lum=.018f+(.10f+.62f*e)*arcs+portal*(.18f+.47f*e);
     lum*=(.55f+.45f*d)*(.75f+.25f*(state.volume/255.0f));
     if(!connected)lum*=.40f;
     SEGMENT.setPixelColorXY(x,y,chroma(sector*17.0f+90.0f*e+t*12.0f+60.0f*r+SEGMENT.custom2*.45f,lum));
@@ -1732,17 +1728,44 @@ static void mode_audio4() {
 }
 static const char ma4[] PROGMEM="GPTA04 - Resonant Tessellator@Drift,Facet,Tile Size,Hue;!,!;!;2v;sx=120,ix=185,si=0";
 
-// GPTA05: 16 audio-fed branching coral arms; peaks radiate traveling spores.
+// GPTA05: overlapping, independently expanding beat ripples. A new beat never
+// rewinds any existing wave; memory belongs to the segment (not task stack).
+struct ReefWaveState {
+  AudioState audio; // first member retains the shared AudioReactive sampler
+  uint32_t launches[6];
+  uint32_t lastRecorded;
+  uint8_t count;
+  uint8_t next;
+};
 static void mode_audio5() {
   if(!ready() || !tick(36))return;
-  if(!SEGENV.allocateData(sizeof(AudioState))){SEGMENT.fill(SEGCOLOR(0));return;}
-  AudioState& st=*reinterpret_cast<AudioState*>(SEGENV.data);
-  if(SEGENV.call==0)memset(&st,0,sizeof(st));
+  if(!SEGENV.allocateData(sizeof(ReefWaveState))){SEGMENT.fill(SEGCOLOR(0));return;}
+  ReefWaveState& reef=*reinterpret_cast<ReefWaveState*>(SEGENV.data);
+  if(SEGENV.call==0) memset(&reef,0,sizeof(reef));
+  AudioState& st=reef.audio;
   bool connected=sampleAudio(st);
+  // sampleAudio() reports a rising peak by updating lastPulse. Capture each
+  // distinct timestamp once, leaving all earlier waves' birth times intact.
+  if(connected && st.lastPulse && st.lastPulse!=reef.lastRecorded) {
+    reef.lastRecorded=st.lastPulse;
+    reef.launches[reef.next]=st.lastPulse;
+    reef.next=(uint8_t)((reef.next+1U)%6U);
+    if(reef.count<6U) ++reef.count;
+  }
+  const uint32_t now=strip.now;
+  float waveRadius[6],waveGain[6];
+  uint8_t active=0;
+  for(uint8_t i=0;i<reef.count;++i){
+    const uint32_t elapsed=(uint32_t)(now-reef.launches[i]);
+    if(elapsed>=1700U)continue;
+    const float progress=(float)elapsed*(1.0f/1700.0f);
+    waveRadius[active]=1.8f*progress;
+    // A gentle decay prevents successive peaks from appearing as full-screen
+    // strobes, while preserving the original ripple width and velocity.
+    waveGain[active]=.84f*(1.0f-progress)*(1.0f-progress);
+    ++active;
+  }
   int w=SEG_W,h=SEG_H;float u=unitOf(w,h),t=timePhase(.42f);
-  float pulse=0.0f;
-  if(st.lastPulse && (uint32_t)(strip.now-st.lastPulse)<1700U)
-    pulse=1.0f-(float)(strip.now-st.lastPulse)/1700.0f;
 #if GPTFX_STAGE1_PHASE_BOUNDING
   const float raw[3]={t,-t,-t*3.0f};
   const float phase[3]={stage1BoundPhase(raw[0]),stage1BoundPhase(raw[1]),stage1BoundPhase(raw[2])};
@@ -1757,20 +1780,248 @@ static void mode_audio5() {
     float spines=1.0f-smooth(.03f,.17f,
               fabsf(sinf(23.0f*a+6.0f*r+3.0f*sinf(r*4.0f+GPTFX_STAGE1_ARG(-t,phase[1])))));
     float reach=1.0f-smooth(.27f+.49f*e,.46f+.70f*e,r);
-    float wave=pulse*(1.0f-smooth(.024f,.078f,fabsf(r-(1.0f-pulse)*1.8f)));
+    float wave=0.0f;
+    for(uint8_t n=0;n<active;++n){
+      const float delta=fabsf(r-waveRadius[n]);
+      if(delta<.078f)wave+=waveGain[n]*(1.0f-smooth(.024f,.078f,delta));
+    }
     float lum=.014f+reach*(trunk*(.15f+.65f*e)+spines*(.04f+.38f*e))+
-              wave*.84f+ridge(r*21.0f+GPTFX_STAGE1_ARG(-t*3.0f,phase[2]))*reach*.08f;
+              wave+ridge(r*21.0f+GPTFX_STAGE1_ARG(-t*3.0f,phase[2]))*reach*.08f;
     if(!connected)lum*=.4f;
     SEGMENT.setPixelColorXY(x,y,chroma(k*19.0f+e*83.0f+r*50.0f+SEGMENT.custom2*.35f,lum));
   }
 }
 static const char ma5[] PROGMEM="GPTA05 - Synaptic Reef@Drift,Growth,Spines,Color;!,!;!;2v;sx=135,ix=190,si=0";
 
-static void mode_gpt26_profiled(){profileExtra("GPT26b",mode_gpt26);}
-static void mode_gpt27_profiled(){profileExtra("GPT27b",mode_gpt27);}
-static void mode_gpt28_profiled(){profileExtra("GPT28b",mode_gpt28);}
-static void mode_gpt29_profiled(){profileExtra("GPT29b",mode_gpt29);}
-static void mode_gpt30_profiled(){profileExtra("GPT30b",mode_gpt30);}
+
+// Five new beta audio effects only: full-scale response follows the WLED 8-bit
+// FFT contract, with smooth low-level lift and unchanged zero/full-scale endpoints.
+// This is deliberately NOT applied to the 5 qualified GPTA01-05 renderers.
+static inline float newAudioDrive(uint8_t band) {
+  const float e=(float)band*(1.0f/255.0f);
+  return e*(1.52f-.52f*e); // 0 -> 0, 255 -> 1; increased mid-range sensitivity
+}
+
+// GPTA06b: Pulse Architecture. A spectral skyline with secondary luminous
+// terraces; energy changes column height, while the bass launches floor pulses.
+// All geometry is calculated per column, outside the pixel loop.
+static void mode_audio6() {
+  if(!ready() || !tick(34))return;
+  if(!SEGENV.allocateData(sizeof(AudioState))){SEGMENT.fill(SEGCOLOR(0));return;}
+  AudioState& st=*reinterpret_cast<AudioState*>(SEGENV.data);
+  if(SEGENV.call==0)memset(&st,0,sizeof(st));
+  bool connected=sampleAudio(st);
+  int w=SEG_W,h=SEG_H;float t=timePhase(.43f),d=detail();
+  const float bass=(newAudioDrive(st.smoothBands[0])+newAudioDrive(st.smoothBands[1])+newAudioDrive(st.smoothBands[2]))/3.0f;
+  float heights[16],rim[16];
+  for(int k=0;k<16;++k){
+    const float e=newAudioDrive(st.smoothBands[k]);
+    // At 100% FFT each bar fills nearly the entire display, regardless
+    // of breathing phase. Only intermediate energy changes the silhouette.
+    const float breathing=extraSine(stage1BoundPhase(t*.42f+k*.67f));
+    heights[k]=.085f+.905f*e-.080f*e*(1.0f-e)*(1.0f-breathing);
+    rim[k]=.35f+.65f*e;
+  }
+  // The wave phase is bounded only where used as a periodic argument.
+  const float pulse=stage1BoundPhase(t*1.8f);
+  for(int y=0;y<h;++y)for(int x=0;x<w;++x){
+    int k=(int)((int64_t)x*16/w);if(k>15)k=15;
+    const float e=newAudioDrive(st.smoothBands[k]);
+    float ny=1.0f-((float)y+.5f)/h;
+    float colx=frac(((float)x+.5f)*16.0f/w);
+    float edge=(1.0f-smooth(.05f,.19f,fminf(colx,1.0f-colx)));
+    float inside=1.0f-smooth(heights[k]-.018f,heights[k]+.018f,ny);
+    float top=1.0f-smooth(.006f,.027f,fabsf(ny-heights[k]));
+    float ledge=1.0f-smooth(.012f,.042f,fabsf(ny-.5f*heights[k]));
+    float wave=1.0f-smooth(.025f,.095f,fabsf(ny-(.12f+.035f*extraSine(pulse+colx*5.0f))));
+    float lum=.009f + inside*(.09f+.58f*e)*(1.0f-.52f*edge) +top*rim[k]*.48f+
+              ledge*inside*.14f*e + wave*bass*.19f;
+    if(!connected)lum*=.32f;
+    SEGMENT.setPixelColorXY(x,y,chroma(k*13.0f+t*5.0f+SEGMENT.custom2*.58f,lum*(.70f+.30f*d)));
+  }
+}
+static const char ma6[] PROGMEM="GPTA06b - Pulse Architecture@Motion,Impact,Buildings,Hue;!,!;!;2v;sx=118,ix=185,c1=125,c2=125";
+
+// GPTA07b: Harmonic Constellations, expanded into a full-canvas stellar lattice.
+// Each of the sixteen FFT bands moves one star and controls its halo. Band
+// contrasts control luminous bridges; no full-screen shockwave overlay.
+// Geometry is precomputed outside the 4096-pixel loop; no frame heap usage.
+static void mode_audio7() {
+  if(!ready() || !tick(35))return;
+  if(!SEGENV.allocateData(sizeof(AudioState))){SEGMENT.fill(SEGCOLOR(0));return;}
+  AudioState& st=*reinterpret_cast<AudioState*>(SEGENV.data);
+  if(SEGENV.call==0)memset(&st,0,sizeof(st));
+  bool connected=sampleAudio(st);
+  const int w=SEG_W,h=SEG_H;
+  const float t=timePhase(.32f),unit=unitOf(w,h);
+  const float strength=.78f+.78f*tune1();
+  Point stars[16];float energy[16];
+  for(int k=0;k<16;++k){
+    float e=newAudioDrive(st.smoothBands[k]);
+    energy[k]=e;
+    const float a=stage1BoundPhase(t*(.42f+.035f*(k%3))+k*1.17f);
+    const float b=stage1BoundPhase(t*(.28f+.04f*(k%4))+k*2.21f);
+    // Four by four full-frame distribution, broad but bounded spectral motion.
+    const float bx=-.78f+.52f*(float)(k%4);
+    const float by=-.76f+.51f*(float)(k/4);
+    stars[k]={bx+(.055f+.22f*e)*extraSine(a)*strength,
+              by+(.045f+.22f*e)*extraCosine(b)*strength};
+  }
+  for(int y=0;y<h;++y)for(int x=0;x<w;++x){
+    Point p=normal(x,y,unit,w*.5f,h*.5f);
+    float best=0.0f,lines=0.0f;int dominant=0;
+    for(int k=0;k<16;++k){
+      const float dx=p.x-stars[k].x,dy=p.y-stars[k].y;
+      const float ds=dx*dx+dy*dy;
+      const float e=energy[k];
+      const float halo=(.0028f+.064f*e)/(ds*7.8f+.015f);
+      if(halo>best){best=halo;dominant=k;}
+      // Twelve long vertical beams; bass and band strength also affect width.
+      if(k<12){
+        const int j=k+4;
+        const float vx=stars[j].x-stars[k].x,vy=stars[j].y-stars[k].y;
+        const float f=clip((dx*vx+dy*vy)/(vx*vx+vy*vy+.0001f));
+        const float nx=dx-f*vx,ny=dy-f*vy;
+        const float dist=nx*nx+ny*ny;
+        const float mean=(e+energy[j])*.5f;
+        const float width=.003f+.018f*mean;
+        const float beam=(.012f+.84f*mean)*(1.0f-smooth(width*.15f,width,dist));
+        if(beam>lines){lines=beam;dominant=k;}
+      }
+      // Horizontal bridges, on alternate cells, appear at mid/high notes.
+      if(k%4<3 && (k/4)%2==0){
+        const int j=k+1;
+        const float vx=stars[j].x-stars[k].x,vy=stars[j].y-stars[k].y;
+        const float f=clip((dx*vx+dy*vy)/(vx*vx+vy*vy+.0001f));
+        const float nx=dx-f*vx,ny=dy-f*vy;
+        const float mean=(e+energy[j])*.5f;
+        const float bridge=(.009f+.72f*mean)*(1.0f-smooth(.0005f,.006f+.009f*mean,nx*nx+ny*ny));
+        if(bridge>lines){lines=bridge;dominant=k;}
+      }
+    }
+    float lum=clip(.007f+best*.88f+lines);
+    if(!connected)lum*=.35f;
+    SEGMENT.setPixelColorXY(x,y,chroma(dominant*15.0f+t*4.0f+SEGMENT.custom2*.6f,lum));
+  }
+}
+static const char ma7[] PROGMEM="GPTA07b - Harmonic Constellations@Orbit,Starlight,Links,Hue;!,!;!;2v;sx=120,ix=185,c1=125,c2=128";
+
+// GPTA08b: Spectral Vortex. FFT values create twelve rotating spiral arms;
+// bounded phase and precomputed band weights avoid temporal slowdowns.
+static void mode_audio8() {
+  if(!ready() || !tick(35))return;
+  if(!SEGENV.allocateData(sizeof(AudioState))){SEGMENT.fill(SEGCOLOR(0));return;}
+  AudioState& st=*reinterpret_cast<AudioState*>(SEGENV.data);
+  if(SEGENV.call==0)memset(&st,0,sizeof(st));
+  bool connected=sampleAudio(st);
+  int w=SEG_W,h=SEG_H;float unit=unitOf(w,h),t=timePhase(.30f);
+  float energies[16];for(int k=0;k<16;++k)energies[k]=newAudioDrive(st.smoothBands[k]);
+  const float spin=stage1BoundPhase(t*.85f);
+  for(int y=0;y<h;++y)for(int x=0;x<w;++x){
+    Point p=normal(x,y,unit,w*.5f,h*.5f);
+    float r=sqrtf(p.x*p.x+p.y*p.y),a=atan2f(p.y,p.x);
+    float arm=frac((a+K_PI+spin+3.8f*logf(r+.18f))/K_TAU*8.0f);
+    int k=(int)floorf(frac((a+K_PI)/K_TAU)*16.0f)&15;
+    float e=energies[k];
+    float thread=1.0f-smooth(.035f,.25f,fminf(arm,1.0f-arm));
+    float ring=1.0f-smooth(.013f,.075f,fabsf(r-(.23f+.79f*e)));
+    float core=1.0f-smooth(.02f,.22f,r);
+    float outer=1.0f-smooth(.85f,1.33f,r);
+    float lum=.009f+outer*(thread*(.095f+.87f*e)+ring*(.025f+.45f*e)) +core*.25f;
+    if(!connected)lum*=.36f;
+    SEGMENT.setPixelColorXY(x,y,chroma(k*14.5f+r*85.0f+t*8.0f+SEGMENT.custom2*.5f,lum));
+  }
+}
+static const char ma8[] PROGMEM="GPTA08b - Spectral Vortex@Rotation,Energy,Spiral Density,Hue;!,!;!;2v;sx=115,ix=195,c1=120,c2=120";
+
+// GPTA09b: Spectral Ribbons. Completely new renderer in place of Fireflies:
+// six full-width interacting light-streams, with spectral shape modulation,
+// bass widening and transient traveling streaks. No per-pixel sin/sqrt,
+// no extra framebuffer and no per-frame heap or large stack buffers.
+static void mode_audio9() {
+  if(!ready() || !tick(35))return;
+  if(!SEGENV.allocateData(sizeof(AudioState))){SEGMENT.fill(SEGCOLOR(0));return;}
+  AudioState& st=*reinterpret_cast<AudioState*>(SEGENV.data);
+  if(SEGENV.call==0)memset(&st,0,sizeof(st));
+  bool connected=sampleAudio(st);
+  const int w=SEG_W,h=SEG_H;
+  const float t=timePhase(.48f),motion=.7f+.95f*tune1();
+  const float bass=(newAudioDrive(st.smoothBands[0])+newAudioDrive(st.smoothBands[1])+newAudioDrive(st.smoothBands[2]))/3.0f;
+  const float pulse=st.lastPulse?clip(1.0f-(float)(uint32_t)(strip.now-st.lastPulse)/850.0f):0.0f;
+  const float density=.9f+.85f*tune1();
+  // Column-major: calculate six traveling ribbon centerlines only once per x.
+  for(int x=0;x<w;++x){
+    const float u=((float)x+.5f)/(float)w;
+    float center[6],width[6],power[6];
+    for(int k=0;k<6;++k){
+      const float e=(newAudioDrive(st.smoothBands[k*2])+newAudioDrive(st.smoothBands[k*2+1]))*.5f;
+      const float a=stage1BoundPhase(t*(.65f+.075f*k)*motion+k*.95f);
+      const float b=stage1BoundPhase(t*(.29f+.035f*k)+k*2.33f);
+      const float wave=extraSine(stage1BoundPhase(u*(6.5f+1.3f*k)*density+a));
+      const float braid=extraCosine(stage1BoundPhase(u*11.0f-b));
+      center[k]=(.12f+.15f*k)+(.022f+.23f*e)*wave+.038f*braid;
+      width[k]=.010f+.019f*e+.015f*bass;
+      power[k]=.095f+.91f*e;
+    }
+    const float traveling=frac(u*.72f-t*.10f);
+    const float streak=(1.0f-smooth(.016f,.095f,fabsf(traveling-.5f)))*pulse;
+    for(int y=0;y<h;++y){
+      const float v=((float)y+.5f)/(float)h;
+      float lum=.005f;int bestk=0;float high=0.0f;
+      for(int k=0;k<6;++k){
+        const float d=fabsf(v-center[k]);
+        const float core=(1.0f-smooth(width[k]*.16f,width[k],d))*power[k];
+        const float glow=(1.0f-smooth(width[k],width[k]*3.5f,d))*power[k]*.17f;
+        const float val=core+glow;
+        lum+=val*.67f;
+        if(val>high){high=val;bestk=k;}
+      }
+      lum=clip(lum+streak*high*.50f);
+      if(!connected)lum*=.35f;
+      SEGMENT.setPixelColorXY(x,y,chroma(bestk*34.0f+u*34.0f+t*7.0f+SEGMENT.custom2*.55f,lum));
+    }
+  }
+}
+static const char ma9[] PROGMEM="GPTA09b - Spectral Ribbons@Flow,Resonance,Braids,Hue;!,!;!;2v;sx=130,ix=190,c1=128,c2=130";
+
+// GPTA10b: Resonance Cathedral. Stained-glass vaulted arches, translucent
+// vertical columns and an FFT-controlled rose window. No per-frame heap work.
+static void mode_audio10() {
+  if(!ready() || !tick(36))return;
+  if(!SEGENV.allocateData(sizeof(AudioState))){SEGMENT.fill(SEGCOLOR(0));return;}
+  AudioState& st=*reinterpret_cast<AudioState*>(SEGENV.data);
+  if(SEGENV.call==0)memset(&st,0,sizeof(st));
+  bool connected=sampleAudio(st);
+  int w=SEG_W,h=SEG_H;float unit=unitOf(w,h),t=timePhase(.20f);
+  const float phase=stage1BoundPhase(t*.72f);
+  for(int y=0;y<h;++y)for(int x=0;x<w;++x){
+    Point p=normal(x,y,unit,w*.5f,h*.5f);
+    float a=atan2f(p.y+.14f,p.x),r=sqrtf(p.x*p.x+(p.y+.14f)*(p.y+.14f));
+    int k=(int)(frac((a+K_PI)/K_TAU)*16.0f)&15;
+    float e=newAudioDrive(st.smoothBands[k]);
+    // A spectral expansion of the arch, no disconnected vertical pillars.
+    float vault=1.0f-smooth(.012f,.055f,fabsf(p.y-(.45f+(.17f+.11f*e)*extraCosine(stage1BoundPhase(p.x*5.0f)))));
+    float rose=1.0f-smooth(.018f,.070f,fabsf(r-(.38f+.13f*e)));
+    float roseRays=1.0f-smooth(.10f,.37f,fabsf(extraSine(8.0f*a+phase)));
+    float glass=1.0f-smooth(.22f,.68f,r);
+    float lum=.009f+vault*(.10f+.75f*e)+
+      rose*(.08f+.65f*e)+roseRays*glass*(.035f+.43f*e);
+    if(!connected)lum*=.34f;
+    SEGMENT.setPixelColorXY(x,y,chroma(k*16.0f+45.0f*e+t*6.0f+SEGMENT.custom2*.5f,lum));
+  }
+}
+static const char ma10[] PROGMEM="GPTA10b - Resonance Cathedral@Breathing,Stained Glass,Arches,Hue;!,!;!;2v;sx=115,ix=195,c1=130,c2=128";
+
+static void mode_gpt26_profiled(){profileExtra("GPT26",mode_gpt26);}
+static void mode_gpt27_profiled(){profileExtra("GPT27",mode_gpt27);}
+static void mode_gpt28_profiled(){profileExtra("GPT28",mode_gpt28);}
+static void mode_gpt29_profiled(){profileExtra("GPT29",mode_gpt29);}
+static void mode_gpt30_profiled(){profileExtra("GPT30",mode_gpt30);}
+static void mode_audio6_profiled(){profileExtra("GPTA06b",mode_audio6);}
+static void mode_audio7_profiled(){profileExtra("GPTA07b",mode_audio7);}
+static void mode_audio8_profiled(){profileExtra("GPTA08b",mode_audio8);}
+static void mode_audio9_profiled(){profileExtra("GPTA09b",mode_audio9);}
+static void mode_audio10_profiled(){profileExtra("GPTA10b",mode_audio10);}
 static void mode_gpt1_profiled(){profileExtra("GPT01",mode_gpt1);}
 static void mode_gpt2_profiled(){profileExtra("GPT02",mode_gpt2);}
 static void mode_gpt9_profiled(){profileExtra("GPT09",mode_gpt9);}
@@ -1778,7 +2029,7 @@ static void mode_gpt10_profiled(){profileExtra("GPT10",mode_gpt10);}
 static void mode_gpt14_profiled(){profileExtra("GPT14",mode_gpt14);}
 static void mode_gpt16_profiled(){profileExtra("GPT16",mode_gpt16);}
 static void mode_gpt15_profiled(){profileExtra("GPT15",mode_gpt15);}
-static void mode_gpt25_profiled(){profileExtra("GPT25b",mode_gpt25);}
+static void mode_gpt25_profiled(){profileExtra("GPT25",mode_gpt25);}
 static void mode_audio1_profiled(){profileExtra("GPTA01",mode_audio1);}
 static void mode_audio2_profiled(){profileExtra("GPTA02",mode_audio2);}
 static void mode_audio3_profiled(){profileExtra("GPTA03",mode_audio3);}
@@ -1788,7 +2039,7 @@ static void mode_gpt5_profiled(){profileExtra("GPT05",mode_gpt5);}
 static void mode_gpt11_profiled(){profileExtra("GPT11",mode_gpt11);}
 static void mode_gpt13_profiled(){profileExtra("GPT13",mode_gpt13);}
 static void mode_gpt19_profiled(){profileExtra("GPT19",mode_gpt19);}
-static void mode_gpt23_profiled(){profileExtra("GPT23b",mode_gpt23);}
+static void mode_gpt23_profiled(){profileExtra("GPT23",mode_gpt23);}
 static void mode_audio5_profiled(){profileExtra("GPTA05",mode_audio5);}
 static void mode_gpt7_profiled(){profileExtra("GPT07",mode_gpt7);}
 static void mode_gpt8_profiled(){profileExtra("GPT08",mode_gpt8);}
@@ -1837,6 +2088,12 @@ public:
     strip.addEffect(255, &gptfx::mode_gpt28_profiled, gptfx::m28);
     strip.addEffect(255, &gptfx::mode_gpt29_profiled, gptfx::m29);
     strip.addEffect(255, &gptfx::mode_gpt30_profiled, gptfx::m30);
+    // New audio betas are appended, so all previously registered IDs stay fixed.
+    strip.addEffect(255, &gptfx::mode_audio6_profiled, gptfx::ma6);
+    strip.addEffect(255, &gptfx::mode_audio7_profiled, gptfx::ma7);
+    strip.addEffect(255, &gptfx::mode_audio8_profiled, gptfx::ma8);
+    strip.addEffect(255, &gptfx::mode_audio9_profiled, gptfx::ma9);
+    strip.addEffect(255, &gptfx::mode_audio10_profiled, gptfx::ma10);
     gptfx::runTrigBenchmark();
   }
   void loop() override {}
@@ -1845,12 +2102,12 @@ public:
     JsonObject info = userInfo["gptMatrixFX"].to<JsonObject>();
     info["version"] = gptfx::GPTFX_VERSION;
     info["build"] = gptfx::GPTFX_BUILD;
-    info["effects"] = 35;
-    info["standard"] = 20;
-    info["audio"] = 5;
-    info["experimental"] = 10;
+    info["effects"] = 40;
+    info["standard"] = 30;
+    info["audio"] = 10;
+    info["experimental"] = 5;
     JsonObject trig = info["trigonometry"].to<JsonObject>();
-    trig["effect"] = "GPT24b";
+    trig["effect"] = "GPT24";
     trig["backend"] = gptfx_trig::backendName();
     trig["tableSamples"] = gptfx_trig::TABLE_SIZE;
     trig["tableBytes"] = sizeof(gptfx_trig::sinTable);
@@ -1863,11 +2120,11 @@ public:
     trig["labyrinthBackend"] = gptfx::labyrinthBackendName();
     trig["labyrinthPhaseBounding"] = (bool)GPTFX_GPT18_PHASE_BOUNDING;
     trig["stage1PhaseBounding"] = (bool)GPTFX_STAGE1_PHASE_BOUNDING;
-    trig["stage1Effects"] = "GPT05,GPT11,GPT13,GPT19,GPT23b,GPTA05";
+    trig["stage1Effects"] = "GPT05,GPT11,GPT13,GPT19,GPT23,GPTA05";
     trig["stage2PhaseBounding"] = (bool)GPTFX_STAGE2_PHASE_BOUNDING;
     trig["stage2Effects"] = "GPT01,GPT02,GPT09,GPT10,GPT14,GPT16";
     trig["stage2bPhaseBounding"] = (bool)GPTFX_STAGE2B_PHASE_BOUNDING;
-    trig["stage2bEffects"] = "GPT15,GPT25b,GPTA01,GPTA02,GPTA03,GPTA04";
+    trig["stage2bEffects"] = "GPT15,GPT25,GPTA01,GPTA02,GPTA03,GPTA04";
     trig["gpt10CellCache"] = (bool)GPTFX_GPT10_CELL_CACHE;
     trig["gpt10PacketBounding"] = (bool)GPTFX_GPT10_PACKET_BOUNDING;
     JsonObject extra = info["extraPerformance"].to<JsonObject>();
@@ -1899,7 +2156,7 @@ public:
     glass["packetRawSampleAbs"] = gptfx::gpt10Diag.packetRawAbs;
     glass["packetBoundedSampleAbs"] = gptfx::gpt10Diag.packetBoundedAbs;
     JsonObject perf = info["performance"].to<JsonObject>();
-    perf["effect"] = "GPT24b";
+    perf["effect"] = "GPT24";
     perf["calls"] = gptfx::gpt24Perf.calls;
     perf["rendered"] = gptfx::gpt24Perf.rendered;
     perf["skipped"] = gptfx::gpt24Perf.skipped;

@@ -43,14 +43,14 @@ int main(){
     JsonObject info{&fields, ""};
     globalMod->addToJsonInfo(info);
     assert(fields.at("u.gptMatrixFX.version")=="0.3.0");
-    assert(fields.at("u.gptMatrixFX.build")=="dev.16-preview.4a");
-    assert(fields.at("u.gptMatrixFX.effects")=="35");
-    assert(fields.at("u.gptMatrixFX.standard")=="20");
-    assert(fields.at("u.gptMatrixFX.audio")=="5");
-    assert(fields.at("u.gptMatrixFX.experimental")=="10");
-    assert(fields.at("u.gptMatrixFX.performance.effect")=="GPT24b");
+    assert(fields.at("u.gptMatrixFX.build")=="dev.16-preview.7b");
+    assert(fields.at("u.gptMatrixFX.effects")=="40");
+    assert(fields.at("u.gptMatrixFX.standard")=="30");
+    assert(fields.at("u.gptMatrixFX.audio")=="10");
+    assert(fields.at("u.gptMatrixFX.experimental")=="5");
+    assert(fields.at("u.gptMatrixFX.performance.effect")=="GPT24");
     assert(fields.at("u.gptMatrixFX.performance.rendered")=="0");
-    assert(fields.at("u.gptMatrixFX.trigonometry.effect")=="GPT24b");
+    assert(fields.at("u.gptMatrixFX.trigonometry.effect")=="GPT24");
     assert(fields.at("u.gptMatrixFX.trigonometry.tableSamples")=="1024");
     assert(fields.at("u.gptMatrixFX.trigonometry.tableBytes")=="4096");
     assert(fields.at("u.gptMatrixFX.trigonometry.backend")==gptfx_trig::backendName());
@@ -60,17 +60,18 @@ int main(){
     assert(fields.at("u.gptMatrixFX.extraPerformance.effect")=="none");
     std::puts("JSON_INFO_TEST_PASS");
   }
-  constexpr size_t NORMAL=20,AUDIO=5,EXPERIMENTAL=10,COUNT=NORMAL+AUDIO+EXPERIMENTAL;
+  constexpr size_t NORMAL=20,AUDIO=5,EXPERIMENTAL=10,NEW_AUDIO=5,COUNT=NORMAL+AUDIO+EXPERIMENTAL+NEW_AUDIO;
   assert(strip.effects.size()==COUNT);
   for(size_t n=0;n<COUNT;n++) {
     const auto& fx=strip.effects[n];
     char want[36];
     if(n<NORMAL) std::snprintf(want,sizeof(want),"GPT%02zu - ",n+1);
     else if(n<NORMAL+AUDIO) std::snprintf(want,sizeof(want),"GPTA%02zu - ",n-NORMAL+1);
-    else std::snprintf(want,sizeof(want),"GPT%02zub - ",n-AUDIO+1);
+    else if(n<NORMAL+AUDIO+EXPERIMENTAL) std::snprintf(want,sizeof(want),"GPT%02zu - ",n-AUDIO+1);
+    else std::snprintf(want,sizeof(want),"GPTA%02zub - ",n-(NORMAL+AUDIO+EXPERIMENTAL)+6);
     assert(std::strstr(fx.name,want)==fx.name);
     assert(fx.id==255);
-    if(n>=NORMAL && n<NORMAL+AUDIO) assert(std::strstr(fx.name,";2v;")!=nullptr);
+    if((n>=NORMAL && n<NORMAL+AUDIO) || n>=NORMAL+AUDIO+EXPERIMENTAL) assert(std::strstr(fx.name,";2v;")!=nullptr);
     else assert(std::strstr(fx.name,";2;")!=nullptr);
   }
   // Frozen baseline: dev.8 must still match dev.7 pixel-for-pixel.
@@ -418,7 +419,7 @@ int main(){
     for(size_t n=0;n<COUNT;n++) {
       Segment seg(w,h);strip._currentSegment=&seg;
       seg.call=0;strip.now=700000;
-      UsermodManager::audioOn=(n>=NORMAL && n<NORMAL+AUDIO);
+      UsermodManager::audioOn=(n>=NORMAL && n<NORMAL+AUDIO) || n>=NORMAL+AUDIO+EXPERIMENTAL;
       const auto start=std::chrono::steady_clock::now();
       strip.effects[n].fn();
       const auto finish=std::chrono::steady_clock::now();
@@ -508,17 +509,19 @@ int main(){
     seg.palette=0; gptfx::ready();
     assert(gptfx::chroma(40.0f, 1.0f)!=0U);
   }
-  std::puts("PALETTE_CHANGE_TEST_PASS 35 FX x 9 palette states + default-black regression + dark-entry preservation");
+  std::puts("PALETTE_CHANGE_TEST_PASS 40 FX x 9 palette states + default-black regression + dark-entry preservation");
   // Audio absent: 5 effects stay safe and safely subdued, no fake FFT signal.
   UsermodManager::audioOn=false;
-  for(int idx=NORMAL;idx<(int)(NORMAL+AUDIO);++idx){
+  for(int idx=NORMAL;idx<(int)COUNT;++idx){
+    if(idx>=(int)(NORMAL+AUDIO) && idx<(int)(NORMAL+AUDIO+EXPERIMENTAL))continue;
     Segment seg(64,64);strip._currentSegment=&seg;seg.call=0;
     strip.now=970000;strip.effects[idx].fn();assert(colorCount(seg)>1);
   }
   // Audio metadata inaccessible: must not dereference u_data or stale pointers.
   UsermodManager::audioOn=true;
   UsermodManager::audio.u_size=0;
-  for(int idx=NORMAL;idx<(int)(NORMAL+AUDIO);++idx){
+  for(int idx=NORMAL;idx<(int)COUNT;++idx){
+    if(idx>=(int)(NORMAL+AUDIO) && idx<(int)(NORMAL+AUDIO+EXPERIMENTAL))continue;
     Segment seg(64,64);strip._currentSegment=&seg;seg.call=0;strip.now=980000;
     strip.effects[idx].fn();
   }
@@ -559,7 +562,8 @@ int main(){
   }
   initAudio();
   // Direct proof each audio effect responds to changes in FFT at fixed time.
-  for(int idx=NORMAL;idx<(int)(NORMAL+AUDIO);++idx){
+  for(int idx=NORMAL;idx<(int)COUNT;++idx){
+    if(idx>=(int)(NORMAL+AUDIO) && idx<(int)(NORMAL+AUDIO+EXPERIMENTAL))continue;
     std::memset(fft,0,sizeof(fft));vol=0.0f;peak=0;
     Segment a(64,64);strip._currentSegment=&a;strip.now=990000;a.call=0;
     strip.effects[idx].fn();auto quiet=a.frameBuffer;
@@ -568,11 +572,12 @@ int main(){
     strip.effects[idx].fn();
     size_t changed=difference(quiet,b.frameBuffer);
     if(changed<400){std::fprintf(stderr,"Audio FX %d insufficient response: %zu bytes changed\n",idx+1,changed);return 3;}
-    std::printf("GPTA%02d FFT_TEST_PASS changed_channels=%zu\n",idx-(int)NORMAL+1,changed);
+    std::printf("GPTA%02d FFT_TEST_PASS changed_channels=%zu\n",idx<(int)(NORMAL+AUDIO) ? idx-(int)NORMAL+1 : idx-(int)(NORMAL+AUDIO+EXPERIMENTAL)+6,changed);
   }
   // Audio not finite: sanitize from external source before math conversion.
   vol=std::numeric_limits<float>::quiet_NaN();
-  for(int idx=NORMAL;idx<(int)(NORMAL+AUDIO);++idx){
+  for(int idx=NORMAL;idx<(int)COUNT;++idx){
+    if(idx>=(int)(NORMAL+AUDIO) && idx<(int)(NORMAL+AUDIO+EXPERIMENTAL))continue;
     Segment seg(32,32);strip._currentSegment=&seg;seg.call=0;strip.now=993000;
     strip.effects[idx].fn();
   }
@@ -624,5 +629,5 @@ int main(){
     assert(difference(a.frameBuffer,b.frameBuffer)>2500);
   }
   std::puts("GPT06_ORBIT_MESH_TEST_PASS 5 speeds x 11 times; contact phase, viewport, travel and rendering");
-  std::puts("HOST_TEST_PASS 35 FX x 5 resolutions + 35 FX x 9 palette states + 5 FFT proofs + no-audio + NaN + epicyclic mesh + nonmatrix");
+  std::puts("HOST_TEST_PASS 40 FX x 5 resolutions + 40 FX x 9 palette states + 10 FFT proofs + no-audio + NaN + epicyclic mesh + nonmatrix");
 }

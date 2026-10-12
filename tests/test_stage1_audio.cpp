@@ -16,7 +16,7 @@ int main(){
   globalMod->setup();
   float volume=130.0f;
   uint8_t fft[16]={210,195,160,122,90,70,45,30,15,40,60,85,115,144,178,225};
-  uint8_t peak=1;
+  uint8_t peak=0;
   void* pointers[4]={&volume,nullptr,fft,&peak};
   UsermodManager::audio.u_size=4;
   UsermodManager::audio.u_data=pointers;

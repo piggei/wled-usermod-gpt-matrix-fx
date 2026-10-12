@@ -124,11 +124,11 @@ int main(int argc,char**argv){
   std::map<std::string,std::string> fields;
   JsonObject root{&fields,""};
   globalMod->addToJsonInfo(root);
-  if(fields.at("u.gptMatrixFX.build")!="dev.16-preview.4a" ||
+  if(fields.at("u.gptMatrixFX.build")!="dev.16-preview.7b" ||
      fields.at("u.gptMatrixFX.trigonometry.stage2PhaseBounding") != (GPTFX_STAGE2_PHASE_BOUNDING ? "1" : "0") ||
      fields.at("u.gptMatrixFX.extraPerformance.effect") != "GPT16" ||
      fields.at("u.gptMatrixFX.trigonometry.stage2Effects") != "GPT01,GPT02,GPT09,GPT10,GPT14,GPT16" ||
-     fields.at("u.gptMatrixFX.trigonometry.stage1Effects") != "GPT05,GPT11,GPT13,GPT19,GPT23b,GPTA05") {
+     fields.at("u.gptMatrixFX.trigonometry.stage1Effects") != "GPT05,GPT11,GPT13,GPT19,GPT23,GPTA05") {
     std::fprintf(stderr,"STAGE2_JSON_FAIL\n");failed=true;
   }
   std::fprintf(stderr,"STAGE2_PHASE_%s total=%llu enabled=%d\n",failed?"FAIL":"PASS",total,GPTFX_STAGE2_PHASE_BOUNDING);
