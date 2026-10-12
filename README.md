@@ -114,16 +114,11 @@ Each effect exposes WLED's standard controls (such as Speed and Intensity) plus 
 
 `/json/info` exposes data under `u.gptMatrixFX`, including `version`, `build`, `effects`, `standard`, `audio`, `experimental`, and performance diagnostics. The module contributes diagnostics without replacing other usermod fields. The WLED global `leds.fps` reflects the full WLED/display pipeline, not only the cost of the selected effect renderer.
 
-## Development and tests
+## Release package
 
-The project includes a deterministic host WLED mock and regression tests:
+This distribution contains only the WLED usermod source files, library metadata, installation example, license, README and release notes. Development diagnostics, tests, simulated visuals, and generated previews are not included.
 
-```sh
-sh tests/run_host_tests.sh
-sh tests/run_sanitizers.sh
-```
-
-The release source archive is intentionally kept lean: it contains production code, documentation, and a host smoke-test suite, but no historical CSV diagnostics, generated previews, benchmark outputs, or experimental build notes. Full-device compilation and extended hardware stability remain release gates.
+Full firmware compilation and extended hardware stability testing remain release qualification steps.
 
 ## License
 
